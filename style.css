@@ -1,0 +1,532 @@
+:root {
+  --bg: #14161c;
+  --panel: #1e2129;
+  --border: #2c303a;
+  --accent: #6c8cff;
+  --gold: #ffb454;
+  --text: #e8e9ee;
+  --text-dim: #8b8f9c;
+  --hp-player: #5fd67a;
+  --hp-enemy: #ff5c5c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0 auto;
+  padding: 16px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  max-width: 760px;
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin: 0 0 14px 0;
+}
+
+.kart {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 0 0 10px 0;
+  font-size: 0.92rem;
+  display: flex;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 6px;
+  flex-wrap: wrap;
+}
+
+button {
+  margin-left: auto;
+  padding: 7px 14px;
+  background: #262a34;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+button:hover {
+  border-color: var(--accent);
+  background: #2a3550;
+}
+
+/* ---------- DÜZEN ---------- */
+
+#uygulama {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+#menu {
+  width: 165px;
+  flex-shrink: 0;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px;
+}
+
+#icerik {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ---------- MENÜ ---------- */
+
+.menu-oge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 0.88rem;
+}
+
+.menu-oge:hover {
+  background: #262a34;
+}
+
+.menu-oge.aktif {
+  background: #2a3550;
+  color: var(--accent);
+}
+
+.menu-ikon {
+  font-size: 1.1rem;
+}
+
+.menu-isim {
+  flex: 1;
+}
+
+.menu-seviye {
+  color: var(--gold);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.menu-ayirici {
+  height: 1px;
+  background: var(--border);
+  margin: 6px 4px;
+}
+
+.calisiyor {
+  color: var(--hp-player);
+  font-size: 0.7rem;
+  animation: nabiz 1.4s ease-in-out infinite;
+}
+
+@keyframes nabiz {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ---------- İÇERİK ---------- */
+
+.baslik {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.baslik:not(:first-child) {
+  margin-top: 22px;
+}
+
+.aksiyon-bilgi {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.alt-bilgi {
+  color: var(--text-dim);
+  font-size: 0.78rem;
+}
+
+.deger {
+  margin-left: auto;
+  font-weight: 600;
+  color: var(--gold);
+  font-size: 1rem;
+}
+
+/* Çalışan aksiyonun kartı vurgulanır */
+.kart.aktif-kart {
+  border-color: var(--accent);
+  background: #1f2430;
+}
+
+/* ---------- İLERLEME ÇUBUKLARI ---------- */
+
+.ilerleme {
+  flex: 0 0 100%;
+  height: 6px;
+  background: #0d0f14;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.ilerleme-dolu {
+  height: 100%;
+  width: 0%;
+  border-radius: 3px;
+}
+
+.ilerleme-dolu.mavi {
+  background: var(--accent);
+}
+
+.ilerleme-dolu.yesil {
+  background: var(--hp-player);
+  transition: width 0.3s;
+}
+
+.ilerleme-dolu.kirmizi {
+  background: var(--hp-enemy);
+  transition: width 0.3s;
+}
+
+/* ---------- KARAKTER İSTATİSTİKLERİ ---------- */
+
+.stat-satiri {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.stat-kutu {
+  flex: 1;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-etiket {
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-deger {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+/* ---------- EKİPMAN IZGARASI ---------- */
+
+.ekipman-izgara {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  max-width: 280px;
+  margin: 0 auto 10px auto;
+}
+
+.slot {
+  aspect-ratio: 1;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.slot:hover {
+  border-color: var(--accent);
+  background: #262a34;
+}
+
+.slot.dolu {
+  border-color: var(--gold);
+  background: #2a2620;
+}
+
+.slot.secili {
+  border-color: var(--accent);
+  background: #2a3550;
+}
+
+.slot-ikon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.slot-ikon.bos {
+  opacity: 0.25;
+}
+
+.slot-ad {
+  font-size: 0.62rem;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+/* ---------- KÜÇÜK EKRAN ---------- */
+
+@media (max-width: 620px) {
+  #uygulama {
+    flex-direction: column;
+  }
+
+  #menu {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .menu-oge {
+    flex: 1 1 auto;
+  }
+
+  .menu-ayirici {
+    display: none;
+  }
+}
+
+.savas-log {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.log-satir {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.log-satir:last-child {
+  border-bottom: none;
+}
+
+.log-satir:first-child {
+  color: var(--text);
+}
+
+#bildirimler {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.bildirim {
+  background: var(--panel);
+  border: 1px solid var(--gold);
+  border-radius: 10px;
+  padding: 10px 14px;
+  min-width: 190px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  animation: bildirimGir 0.25s ease, bildirimCik 0.4s ease 2.6s forwards;
+}
+
+.bildirim-baslik {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.bildirim-icerik {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+@keyframes bildirimGir {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes bildirimCik {
+  to {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+}
+
+.bildirim.seviye {
+  border-color: var(--hp-player);
+  background: #1c2620;
+}
+
+.bildirim.seviye .bildirim-icerik {
+  color: var(--hp-player);
+}
+
+.xp-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+
+.xp-ust {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.xp-seviye {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.xp-detay {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+
+.xp-alt {
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  margin-top: 7px;
+}
+
+.ilerleme-dolu.altin {
+  background: var(--gold);
+  transition: width 0.3s;
+}
+
+/* Menüdeki ince XP çizgisi */
+.menu-oge {
+  position: relative;
+}
+
+.menu-xp {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 3px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.menu-xp-dolu {
+  height: 100%;
+  background: var(--gold);
+  opacity: 0.65;
+  transition: width 0.3s;
+}
+
+.altin-satiri {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  font-size: 0.95rem;
+}
+
+.altin-satiri strong {
+  color: var(--gold);
+}
+
+button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+button:disabled:hover {
+  border-color: var(--border);
+  background: #262a34;
+}
+
+.bildirim.hata {
+  border-color: var(--hp-enemy);
+}
+
+.bildirim.hata .bildirim-icerik {
+  color: var(--hp-enemy);
+}
+
+/* Mobilde çift dokunma zoom'unu ve seçim vurgusunu kapat */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  -webkit-user-select: none;
+  user-select: none;
+  overscroll-behavior: none;
+}
+
+/* Dokunma hedefleri parmak için yeterince büyük olsun */
+@media (max-width: 620px) {
+  button {
+    min-height: 40px;
+    padding: 9px 16px;
+  }
+
+  .menu-oge {
+    padding: 11px 10px;
+  }
+
+  .slot {
+    min-height: 60px;
+  }
+
+  .ekipman-izgara {
+    max-width: 100%;
+  }
+
+  body {
+    padding: 10px;
+  }
+
+  #bildirimler {
+    right: 10px;
+    left: 10px;
+    bottom: 10px;
+  }
+
+  .bildirim {
+    min-width: 0;
+  }
+}
