@@ -8,6 +8,7 @@ import { bolgeler } from "./data/regions.js";
 import { yardimlar, ustalikBolumu } from "./data/help.js";
 import { clanBonuslari } from "./data/clan.js";
 import { basarimlar } from "./data/achievements.js";
+import { aletTurleri } from "./data/tools.js";
 import {
   skillBul, itemBul, actionBul, slotBul,
   seviyeHesapla, seviyeBilgisi, skillSeviyesi,
@@ -24,8 +25,8 @@ import {
   canavarTipiBul, tipCarpani, canavaraHasar,
   clanVarMi, clanSeviyeBilgisi, clanSeviyesi, envanterKapasitesi,
   clanHizBonusu, basarimAcikMi, basarimIlerlemesi, gosterilecekBasarimlar,
-  nisanPuaniDegeri,
-  maxSekmeSayisi
+  nisanPuaniDegeri,aletKademesi, aletKademeBilgisi,
+  maxSekmeSayisi, skillAletTuru, aletYeterliMi, ciftUrunSansi
 } from "./core.js";
 
 // ============================================================
@@ -417,6 +418,26 @@ function skillEkraniCiz(acikSkill) {
       "</div>";
   }
 
+    // Bu yeteneğin aleti varsa göster
+  let skillAleti = skillAletTuru(acikSkill.id);
+  if (skillAleti !== null) {
+    let kademe = aletKademesi(skillAleti.id);
+    let bilgi = aletKademeBilgisi(kademe);
+
+    html = html +
+      "<div class='kart'>" +
+      "<span class='aksiyon-bilgi'>" +
+      "<strong>" + skillAleti.ikon + " " + bilgi.isim + " " +
+      skillAleti.isim + "</strong>" +
+      "<span class='alt-bilgi'>" +
+      (bilgi.ciftUrunSansi > 0
+        ? "%" + Math.round(bilgi.ciftUrunSansi * 100) + " çift ürün şansı"
+        : "Çift ürün şansı yok — dükkândan yükselt") +
+      "</span></span>" +
+      "<button onclick='sekmeAc(\"shop\")'>Dükkân</button>" +
+      "</div>";
+  }
+
   // Savaş yeteneklerinin kendi aksiyonu yok - açıklaması yardım panelinde
   if (acikSkill.kategori === "combat") {
     icerikAlani.innerHTML = html;
@@ -438,13 +459,28 @@ function skillEkraniCiz(acikSkill) {
     let buAksiyonAktif = state.aktifAksiyonId === action.id;
     let malzemeVarMi = girdilerYeterliMi(action);
 
-    if (acikMi === false) {
+        let aletVarMi = aletYeterliMi(action);
+
+    if (acikMi === false || aletVarMi === false) {
+      let sartlar = [];
+
+      if (acikMi === false) {
+        sartlar.push("Seviye " + aksiyonSeviyeGerekli(action));
+      }
+
+      if (aletVarMi === false) {
+        let alet = skillAletTuru(action.skillId);
+        let gerekli = aletKademeBilgisi(action.gerekliAletKademesi);
+        if (alet !== null) {
+          sartlar.push(gerekli.isim + " " + alet.isim);
+        }
+      }
+
       html = html +
         "<div class='kart kilitli'>" +
         "<span class='aksiyon-bilgi'>" +
         "<strong>🔒 " + action.isim + "</strong>" +
-        "<span class='alt-bilgi'>Seviye " + aksiyonSeviyeGerekli(action) +
-        " gerekli</span>" +
+        "<span class='alt-bilgi'>Gerekli: " + sartlar.join(" + ") + "</span>" +
         "</span>" +
         "<button disabled>Kilitli</button>" +
         "</div>";
@@ -494,6 +530,12 @@ function skillEkraniCiz(acikSkill) {
     let clanBonusu = clanHizBonusu();
     let hizBonusu = ustalikBonusu + clanBonusu;
     let gercekSure = aksiyonSuresi(action);
+        let ciftSans = ciftUrunSansi(action);
+    let ciftYazisi = "";
+    if (ciftSans > 0) {
+      ciftYazisi = " · <span class='yeterli'>%" +
+        Math.round(ciftSans * 100) + " çift</span>";
+    }
 
     html = html +
       "<div class='kart " + (buAksiyonAktif ? "aktif-kart" : "") + "'>" +
@@ -508,7 +550,7 @@ function skillEkraniCiz(acikSkill) {
           "'>(-%" + Math.round(hizBonusu * 100) + ")</span>"
         : "") +
       " · +" + action.xp + " XP" +
-      stokYazisi + "</span>" +
+      stokYazisi + ciftYazisi + "</span>" +
       girdiYazisi +
       sansliYazisi +
       "<span class='ustalik-satiri'>" +
@@ -955,6 +997,63 @@ function dukkanEkraniCiz() {
     if (item === null) {
       continue;
     }
+
+      // --- Aletler ---
+  html = html + "<div class='baslik'>🔧 Aletler</div>";
+
+  html = html +
+    "<div class='kart'><span class='alt-bilgi'>" +
+    "Aletler hız vermez — daha yüksek kademe aksiyonları açar ve " +
+    "çift ürün şansı kazandırır." +
+    "</span></div>";
+
+  for (let i = 0; i < aletTurleri.length; i++) {
+    let alet = aletTurleri[i];
+    let mevcutKademe = aletKademesi(alet.id);
+    let mevcut = aletKademeBilgisi(mevcutKademe);
+    let sonraki = aletKademeBilgisi(mevcutKademe + 1);
+
+    let skill = skillBul(alet.skillId);
+    let skillAdi = skill !== null ? skill.isim : "";
+
+    // En üst kademedeyse
+    if (sonraki === null || sonraki.kademe === mevcutKademe) {
+      html = html +
+        "<div class='kart'>" +
+        "<span class='aksiyon-bilgi'>" +
+        "<strong>" + alet.ikon + " " + mevcut.isim + " " + alet.isim + "</strong>" +
+        "<span class='alt-bilgi'>" + skillAdi + " · %" +
+        Math.round(mevcut.ciftUrunSansi * 100) + " çift ürün</span>" +
+        "<span class='alt-bilgi yeterli'>⭐ En üst kademe</span>" +
+        "</span></div>";
+      continue;
+    }
+
+    let seviyeYeterli = skillSeviyesi(alet.skillId) >= sonraki.gerekliSeviye;
+    let altinYeterli = state.altin >= sonraki.fiyat;
+    let alinabilir = seviyeYeterli && altinYeterli;
+
+    let engel = "";
+    if (seviyeYeterli === false) {
+      engel = "<span class='alt-bilgi yetersiz'>" + skillAdi + " " +
+        sonraki.gerekliSeviye + " gerekli</span>";
+    }
+
+    html = html +
+      "<div class='kart'>" +
+      "<span class='aksiyon-bilgi'>" +
+      "<strong>" + alet.ikon + " " + mevcut.isim + " " + alet.isim + "</strong>" +
+      "<span class='alt-bilgi'>" + skillAdi + " · şu an %" +
+      Math.round(mevcut.ciftUrunSansi * 100) + " çift ürün</span>" +
+      "<span class='alt-bilgi'>→ " + sonraki.isim + ": %" +
+      Math.round(sonraki.ciftUrunSansi * 100) + " çift ürün</span>" +
+      engel +
+      "</span>" +
+      "<span class='deger'>🪙 " + sonraki.fiyat.toLocaleString() + "</span>" +
+      "<button onclick='aletYukselt(\"" + alet.id + "\")'" +
+      (alinabilir ? "" : " disabled") + ">Yükselt</button>" +
+      "</div>";
+  }
 
     let alabilirMi = state.altin >= urun.fiyat;
 

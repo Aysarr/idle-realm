@@ -11,6 +11,7 @@ import {
   ikonSurukleUzerinde, ikonBirak, ikonSurukleBitti,
   oyunuSifirla, kaydiDisaAktar, kaydiIceAktar,bolgeSec,
   oyuncuAdiDegistir,  clanKur, clanDagit, nisanBagisla, clanAmblemiDegistir,
+  aletYukselt
 } from "./gameplay.js";
 
 // ============================================================
@@ -53,6 +54,7 @@ window.clanKur = clanKur;
 window.clanDagit = clanDagit;
 window.nisanBagisla = nisanBagisla;
 window.clanAmblemiDegistir = clanAmblemiDegistir;
+window.aletYukselt = aletYukselt;
 
 window.menuDevamEt = menuDevamEt;
 window.menuYeniOyun = menuYeniOyun;

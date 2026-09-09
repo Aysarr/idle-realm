@@ -10,12 +10,16 @@ import { ekipmanSlotlari } from "./data/slots.js";
 // yazacağız, sade "altin" değil.
 // ============================================================
 
+
 export let state = {
   // --- OYUNCU PROFİLİ ---
   // Online'a geçildiğinde bu bilgiler sunucuya taşınacak
   oyuncuAdi: "Maceracı",
   oyuncuId: null,
   oyunBaslangici: 0,
+
+    // Sahip olunan alet kademeleri (envanterde yer kaplamaz)
+  aletler: { axe: 1, pickaxe: 1, rod: 1 },
 
   // --- İSTATİSTİKLER ---
   // Clan katkısı ve başarımlar bunların üstüne kurulacak
@@ -155,6 +159,8 @@ export const KAYDEDILECEK_ALANLAR = [
   "oyuncuHp",
   "ekipman",
   "ekipmanAdet",
+  "aletler",
+  
 
   // Ayarlar
   "otomatikYemekAcik",

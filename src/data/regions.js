@@ -22,5 +22,12 @@ export let bolgeler = [
     ikon: "🌲",
     aciklama: "Ağaçların arasında gözler var. Daha güçlü, daha ödüllü.",
     gerekliSavasSeviyesi: 8
+  },
+  {
+    id: "mine",
+    isim: "Terk Edilmiş Maden",
+    ikon: "🕳️",
+    aciklama: "Yıllar önce boşaltılmış galeriler. Karanlıkta bir şeyler kazıyor.",
+    gerekliSavasSeviyesi: 20
   }
 ];

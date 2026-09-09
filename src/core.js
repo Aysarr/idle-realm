@@ -12,6 +12,7 @@ import {
   NISAN_PUANI, NISAN_SANSLARI
 } from "./data/clan.js";
 import { basarimlar } from "./data/achievements.js";
+import { aletTurleri, aletKademeleri } from "./data/tools.js";
 
 // ============================================================
 // ÇEKİRDEK HESAPLAMALAR
@@ -147,7 +148,7 @@ function xpTablosunuKur() {
   let toplam = 0;
 
   for (let n = 1; n <= MAX_SEVIYE; n++) {
-    toplam = toplam + Math.floor(n + 300 * Math.pow(2, n / 7));
+    toplam = toplam + Math.floor(n + 300 * Math.pow(2, n / 6.5));
     XP_TABLOSU[n + 1] = Math.floor(toplam / 4);
   }
 }
@@ -663,6 +664,67 @@ export function aksiyonAcikMi(action) {
   return skillSeviyesi(action.skillId) >= aksiyonSeviyeGerekli(action);
 }
 
+// ---------- ALETLER ----------
+
+export function aletTuruBul(aletId) {
+  for (let i = 0; i < aletTurleri.length; i++) {
+    if (aletTurleri[i].id === aletId) {
+      return aletTurleri[i];
+    }
+  }
+  return null;
+}
+
+// Bir yeteneğin aleti hangisi? (üretim yeteneklerinde alet yok)
+export function skillAletTuru(skillId) {
+  for (let i = 0; i < aletTurleri.length; i++) {
+    if (aletTurleri[i].skillId === skillId) {
+      return aletTurleri[i];
+    }
+  }
+  return null;
+}
+
+export function aletKademesi(aletId) {
+  if (state.aletler[aletId]) {
+    return state.aletler[aletId];
+  }
+  return 1;
+}
+
+export function aletKademeBilgisi(kademe) {
+  for (let i = 0; i < aletKademeleri.length; i++) {
+    if (aletKademeleri[i].kademe === kademe) {
+      return aletKademeleri[i];
+    }
+  }
+  return aletKademeleri[0];
+}
+
+// Aksiyonun istediği alet kademesi var mı?
+export function aletYeterliMi(action) {
+  if (!action.gerekliAletKademesi) {
+    return true;
+  }
+
+  let alet = skillAletTuru(action.skillId);
+  if (alet === null) {
+    return true;
+  }
+
+  return aletKademesi(alet.id) >= action.gerekliAletKademesi;
+}
+
+// Bu aksiyonda çift ürün şansı ne? (aletten gelir)
+export function ciftUrunSansi(action) {
+  let alet = skillAletTuru(action.skillId);
+  if (alet === null) {
+    return 0;
+  }
+
+  return aletKademeBilgisi(aletKademesi(alet.id)).ciftUrunSansi;
+}
+
 // ---------- EŞYA SEVİYE ŞARTI ----------
 // Bir eşya "gereksinimler" alanı taşıyabilir:
 //   gereksinimler: [{ skillId: "attack", seviye: 10 }, ...]
@@ -786,10 +848,23 @@ export function ciktilarSigarMi(action) {
 }
 
 export function ciktilariVer(action, kere) {
+  let ciftSans = ciftUrunSansi(action);
+
   if (action.ciktilar) {
     for (let i = 0; i < action.ciktilar.length; i++) {
       let cikti = action.ciktilar[i];
-      itemEkle(cikti.itemId, cikti.miktar * kere);
+      let toplam = cikti.miktar * kere;
+
+      // Alet çift ürün şansı — her tekrar için ayrı zar
+      if (ciftSans > 0) {
+        for (let n = 0; n < kere; n++) {
+          if (Math.random() <= ciftSans) {
+            toplam = toplam + cikti.miktar;
+          }
+        }
+      }
+
+      itemEkle(cikti.itemId, toplam);
     }
   }
 

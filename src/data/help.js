@@ -77,6 +77,15 @@ export let yardimlar = {
           "Sat bölümünde envanterindeki her şeyi teker teker veya toptan satabilirsin.",
           "Altını çoğunlukla savaştan ve fazla malzeme satarak kazanırsın."
         ]
+      },
+      {
+        baslik: "Aletler",
+        satirlar: [
+          "Balta, Kazma ve Olta kademeli olarak yükseltilir.",
+          "Aletler hız vermez — bazı üst kademe aksiyonları açarlar.",
+          "Ayrıca çift ürün şansı verirler: bir aksiyonda iki ürün çıkabilir.",
+          "Yükseltmek için hem altın hem ilgili yetenek seviyesi gerekir."
+        ]
       }
     ],
     ipuclari: [
