@@ -1,13 +1,12 @@
 import { skills } from "./data/skills.js";
-import { ekipmanSlotlari } from "./data/slots.js";
-import { state, ekipmaniSifirla } from "./state.js";
+import { state, ekipmaniSifirla, KAYDEDILECEK_ALANLAR } from "./state.js";
 import {
   skillBul, itemBul, actionBul, monsterBul, xpVer,
-  toplamMaxHp, toplamSaldiri, gelenHasar,
+  toplamMaxHp, gelenHasar, canavaraHasar,
   oyuncuSaldiriHizi, oyuncuIsabetSansi, canavarIsabetSansi,
   okluSilahMi, slotAdedi, slotItemi, menzilliMi,
   kacKezYapilabilir, girdileriTuket, ciktilariVer, itemEkle,
-  seviyeHesapla
+  aksiyonSuresi, ustalikXpVer, rastgeleMiktar, seviyeHesapla
 } from "./core.js";
 
 // ============================================================
@@ -17,32 +16,92 @@ import {
 const KAYIT_ANAHTARI = "idle-realm-kayit";
 const MAX_OFFLINE_MS = 12 * 60 * 60 * 1000;
 
+// Kayıt yapısı değiştiğinde bu sayıyı artır ve kayitGocu()
+// içine dönüşümü yaz. Böylece eski kayıtlar bozulmaz.
+const KAYIT_SURUMU = 3;
+
+// ---------- KAYDETME ----------
+
 export function oyunuKaydet() {
+  // Sıfırlama veya içe aktarma yapılıyorsa kaydetme
+  if (state.kayitKapali) {
+    return;
+  }
+
   let kayit = {
-    skills: skills,
-    envanter: state.envanter,
-    altin: state.altin,
-    oyuncuHp: state.oyuncuHp,
-    ekipman: state.ekipman,
-    ekipmanAdet: state.ekipmanAdet,
-    otomatikYemekAcik: state.otomatikYemekAcik,
-    otomatikYemekEsigi: state.otomatikYemekEsigi,
-    savasStili: state.savasStili,
-    aktifAksiyonId: state.aktifAksiyonId,
-    aktifSavasMonsterId: state.aktifSavasMonsterId,
-    aktifSavasMonsterHp: state.aktifSavasMonsterHp,
-    gorulenYardimlar: state.gorulenYardimlar,
-    envanterKapasitesi: state.envanterKapasitesi,
-    envanterSekmeleri: state.envanterSekmeleri,
-    maxEnvanterSekmesi: state.maxEnvanterSekmesi,
-    kayitZamani: Date.now()
+    surum: KAYIT_SURUMU,
+    kayitZamani: Date.now(),
+    // Yetenekler state içinde değil, ayrı bir modülde duruyor
+    skills: skills
   };
+
+  // Listedeki her alanı otomatik kaydet
+  for (let i = 0; i < KAYDEDILECEK_ALANLAR.length; i++) {
+    let alan = KAYDEDILECEK_ALANLAR[i];
+    kayit[alan] = state[alan];
+  }
 
   try {
     localStorage.setItem(KAYIT_ANAHTARI, JSON.stringify(kayit));
   } catch (hata) {
     console.error("Kayıt başarısız:", hata);
   }
+}
+
+// ---------- YÜKLEME ----------
+
+// Kayıtlı değeri mevcut yapının üstüne yazar.
+// Objelerde ANAHTAR ANAHTAR birleştirir - böylece oyuna
+// sonradan eklenen alanlar (yeni istatistik sayacı, yeni
+// ekipman slotu) eski kayıtta yok diye kaybolmaz.
+function degeriBirlestir(mevcut, kayitli) {
+  // Dizi veya ilkel değer: doğrudan değiştir
+  if (Array.isArray(kayitli) || typeof kayitli !== "object" || kayitli === null) {
+    return kayitli;
+  }
+
+  // Obje: mevcut yapıyı koru, kayıtlı anahtarları üstüne yaz
+  let sonuc = mevcut;
+  if (typeof sonuc !== "object" || sonuc === null || Array.isArray(sonuc)) {
+    sonuc = {};
+  }
+
+  for (let anahtar in kayitli) {
+    sonuc[anahtar] = kayitli[anahtar];
+  }
+
+  return sonuc;
+}
+
+// Eski sürümdeki kayıtları güncel yapıya çevirir
+function kayitGocu(kayit) {
+  let surum = kayit.surum ? kayit.surum : 1;
+
+  // --- Sürüm 1 → 2: envanter sekmeleri ve kapasite eklendi ---
+  if (surum < 2) {
+    if (kayit.envanter) {
+      for (let i = 0; i < kayit.envanter.length; i++) {
+        if (!kayit.envanter[i].sekmeId) {
+          kayit.envanter[i].sekmeId = "genel";
+        }
+      }
+    }
+    if (!kayit.envanterSekmeleri) {
+      kayit.envanterSekmeleri = [{ id: "genel", isim: "Genel", ikon: "📦" }];
+    }
+    surum = 2;
+  }
+
+  // --- Sürüm 2 → 3: eski tek silah slotu yeni sisteme taşındı ---
+  if (surum < 3) {
+    if (!kayit.ekipman && kayit.kusanilanSilahId) {
+      kayit.ekipman = { weapon: kayit.kusanilanSilahId };
+    }
+    surum = 3;
+  }
+
+  kayit.surum = surum;
+  return kayit;
 }
 
 export function oyunuYukle() {
@@ -52,10 +111,18 @@ export function oyunuYukle() {
     return;
   }
 
-  let kayit = JSON.parse(kayitMetni);
+  let kayit;
+  try {
+    kayit = JSON.parse(kayitMetni);
+  } catch (hata) {
+    console.error("Kayıt okunamadı:", hata);
+    return;
+  }
 
-  // Skill XP'lerini geri yükle.
-  // Tek tek dolaşıyoruz ki oyuna sonradan eklenen skiller kaybolmasın.
+  kayit = kayitGocu(kayit);
+
+  // --- Yetenek XP'leri ---
+  // Tek tek dolaşıyoruz ki oyuna sonradan eklenen yetenekler kaybolmasın
   if (kayit.skills) {
     for (let i = 0; i < kayit.skills.length; i++) {
       let kayitliSkill = kayit.skills[i];
@@ -66,67 +133,36 @@ export function oyunuYukle() {
     }
   }
 
-  if (kayit.envanter) {
-    state.envanter = kayit.envanter;
-  }
-  if (kayit.envanterKapasitesi) {
-    state.envanterKapasitesi = kayit.envanterKapasitesi;
-  }
-  if (kayit.envanterSekmeleri) {
-    state.envanterSekmeleri = kayit.envanterSekmeleri;
-  }
-  if (kayit.maxEnvanterSekmesi) {
-    state.maxEnvanterSekmesi = kayit.maxEnvanterSekmesi;
-  }
-  if (kayit.altin) {
-    state.altin = kayit.altin;
-  }
-  if (kayit.otomatikYemekAcik) {
-    state.otomatikYemekAcik = kayit.otomatikYemekAcik;
-  }
-  if (kayit.otomatikYemekEsigi) {
-    state.otomatikYemekEsigi = kayit.otomatikYemekEsigi;
-  }
-  if (kayit.savasStili) {
-    state.savasStili = kayit.savasStili;
-  }
-  if (kayit.gorulenYardimlar) {
-    state.gorulenYardimlar = kayit.gorulenYardimlar;
-  }
-
-  // Ekipman - eski kayıtlarda sadece kusanilanSilahId vardı
+  // Ekipman slotlarını önce sıfırla, sonra kayıttakini üstüne yaz.
+  // Böylece sonradan eklenen slotlar boş ama TANIMLI olur.
   ekipmaniSifirla();
 
-  if (kayit.ekipman) {
-    for (let i = 0; i < ekipmanSlotlari.length; i++) {
-      let slotId = ekipmanSlotlari[i].id;
-      if (kayit.ekipman[slotId]) {
-        state.ekipman[slotId] = kayit.ekipman[slotId];
+  // --- Listedeki alanları otomatik yükle ---
+  for (let i = 0; i < KAYDEDILECEK_ALANLAR.length; i++) {
+    let alan = KAYDEDILECEK_ALANLAR[i];
+
+    if (kayit[alan] === undefined || kayit[alan] === null) {
+      // clan gibi null olabilen alanlar için: kayıtta açıkça
+      // null yazıyorsa onu uygula, hiç yoksa varsayılanı koru
+      if (kayit[alan] === null) {
+        state[alan] = null;
       }
-      if (kayit.ekipmanAdet && kayit.ekipmanAdet[slotId]) {
-        state.ekipmanAdet[slotId] = kayit.ekipmanAdet[slotId];
-      }
+      continue;
     }
-  } else if (kayit.kusanilanSilahId) {
-    state.ekipman["weapon"] = kayit.kusanilanSilahId;
+
+    state[alan] = degeriBirlestir(state[alan], kayit[alan]);
   }
 
-  if (kayit.oyuncuHp) {
-    state.oyuncuHp = kayit.oyuncuHp;
-  }
+  // Can, güncel maksimumu aşmasın (Sağlık seviyesi değişmiş olabilir)
   if (state.oyuncuHp > toplamMaxHp()) {
     state.oyuncuHp = toplamMaxHp();
   }
 
-  if (kayit.aktifSavasMonsterHp) {
-    state.aktifSavasMonsterHp = kayit.aktifSavasMonsterHp;
-  }
-
-  // game.js bunlara bakıp aktiviteyi devam ettirecek
+  // game.js bunlara bakıp aktiviteyi sürdürecek
   state.devamEdilecekAksiyonId = kayit.aktifAksiyonId;
   state.devamEdilecekSavasId = kayit.aktifSavasMonsterId;
 
-  // Offline ilerleme - ya toplama ya savaş çalışıyordu
+  // --- Offline ilerleme ---
   if (kayit.aktifSavasMonsterId) {
     offlineSavasHesapla(kayit.kayitZamani, kayit.aktifSavasMonsterId);
   } else if (kayit.aktifAksiyonId) {
@@ -146,9 +182,10 @@ function offlineAksiyonHesapla(kayitZamani, kayitliAksiyonId) {
     return;
   }
 
+  let sure = aksiyonSuresi(action);
   let gecenSureMs = Date.now() - kayitZamani;
 
-  if (gecenSureMs < action.sureMs) {
+  if (gecenSureMs < sure) {
     return;
   }
 
@@ -156,7 +193,7 @@ function offlineAksiyonHesapla(kayitZamani, kayitliAksiyonId) {
     gecenSureMs = MAX_OFFLINE_MS;
   }
 
-  let adet = Math.floor(gecenSureMs / action.sureMs);
+  let adet = Math.floor(gecenSureMs / sure);
 
   let malzemeSiniri = kacKezYapilabilir(action);
   if (adet > malzemeSiniri) {
@@ -170,6 +207,7 @@ function offlineAksiyonHesapla(kayitZamani, kayitliAksiyonId) {
   girdileriTuket(action, adet);
   ciktilariVer(action, adet);
   xpVer(action.skillId, action.xp * adet);
+  ustalikXpVer(action, adet);
 
   ozetGoster(
     sureMetni(gecenSureMs),
@@ -185,7 +223,6 @@ function offlineAksiyonHesapla(kayitZamani, kayitliAksiyonId) {
 // işliyoruz - tıpkı canlı savaştaki gibi, ama beklemeden.
 //
 // Basitleştirme: istatistikler çıkıştaki değerlerde donuyor.
-// Yoksa her vuruşta yeniden hesaplamak gerekirdi.
 
 function offlineSavasHesapla(kayitZamani, monsterId) {
   let monster = monsterBul(monsterId);
@@ -204,7 +241,7 @@ function offlineSavasHesapla(kayitZamani, monsterId) {
   }
 
   // --- İstatistik anlık görüntüsü ---
-  let hasarim = toplamSaldiri();
+  let hasarim = canavaraHasar(monster);
   let isabetSansim = oyuncuIsabetSansi(monster);
   let canavarIsabeti = canavarIsabetSansi(monster);
   let canavarHasari = gelenHasar(monster.saldiri);
@@ -219,7 +256,6 @@ function offlineSavasHesapla(kayitZamani, monsterId) {
   }
 
   // --- Simülasyon değişkenleri ---
-  let zaman = 0;
   let oyuncuSonrakiVurus = hizim;
   let canavarSonrakiVurus = monster.saldiriHiziMs;
 
@@ -247,12 +283,10 @@ function offlineSavasHesapla(kayitZamani, monsterId) {
   while (guvenlikSayaci < 400000) {
     guvenlikSayaci++;
 
-    // Sırada kim var?
     let sonrakiOlay = Math.min(oyuncuSonrakiVurus, canavarSonrakiVurus);
     if (sonrakiOlay > gecenSureMs) {
       break;
     }
-    zaman = sonrakiOlay;
 
     if (oyuncuSonrakiVurus <= canavarSonrakiVurus) {
       // ----- OYUNCUNUN VURUŞU -----
@@ -282,10 +316,11 @@ function offlineSavasHesapla(kayitZamani, monsterId) {
             for (let i = 0; i < monster.lootTablosu.length; i++) {
               let loot = monster.lootTablosu[i];
               if (Math.random() <= loot.sans) {
+                let dusen = rastgeleMiktar(loot);
                 if (lootSayaci[loot.itemId]) {
-                  lootSayaci[loot.itemId] = lootSayaci[loot.itemId] + 1;
+                  lootSayaci[loot.itemId] = lootSayaci[loot.itemId] + dusen;
                 } else {
-                  lootSayaci[loot.itemId] = 1;
+                  lootSayaci[loot.itemId] = dusen;
                 }
               }
             }
@@ -299,7 +334,6 @@ function offlineSavasHesapla(kayitZamani, monsterId) {
       if (Math.random() <= canavarIsabeti) {
         hp = hp - canavarHasari;
 
-        // Otomatik yemek
         if (state.otomatikYemekAcik && hp > 0 && hp < esikCan &&
             yemekKalan > 0 && yemekIyilestirme > 0) {
           yemekKalan = yemekKalan - 1;
@@ -436,11 +470,28 @@ export function kayitOzeti() {
     }
 
     return {
+      oyuncuAdi: kayit.oyuncuAdi ? kayit.oyuncuAdi : "Maceracı",
       toplamSeviye: toplamSeviye,
       altin: kayit.altin ? kayit.altin : 0,
       kayitZamani: kayit.kayitZamani ? kayit.kayitZamani : 0
     };
   } catch (hata) {
     return null;
+  }
+}
+
+// ---------- PROFİL KURULUMU ----------
+
+// Oyuncuya benzersiz bir kimlik verir.
+// Online'a geçildiğinde sunucu bu id'yi tanıyacak.
+export function profilKur() {
+  if (state.oyuncuId === null) {
+    state.oyuncuId =
+      "p_" + Date.now().toString(36) +
+      "_" + Math.random().toString(36).substring(2, 8);
+  }
+
+  if (!state.oyunBaslangici) {
+    state.oyunBaslangici = Date.now();
   }
 }

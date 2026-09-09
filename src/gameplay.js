@@ -7,10 +7,15 @@ import {
   oyuncuSaldiriHizi, oyuncuIsabetSansi, canavarIsabetSansi,
   aksiyonAcikMi, aksiyonSeviyeGerekli,
   girdilerYeterliMi, girdileriTuket, ciktilariVer, ciktilarSigarMi,
-  okluSilahMi, menzilliMi, slotYiginMi, slotAdedi, slotItemi, slottanTuket
+  okluSilahMi, menzilliMi, slotYiginMi, slotAdedi, slotItemi, slottanTuket,
+  itemKusanilabilirMi, eksikGereksinimYazisi, rastgeleMiktar,
+  bolgeBul, bolgeAcikMi, ustalikXpVer, aksiyonSuresi,
+  canavaraHasar, tipCarpani, istatistikArtir,clanSeviyesi,
+  clanAltinCarpani
 } from "./core.js";
 import { bildirimGoster } from "./notify.js";
 import { tumEkraniCiz, esikYazisiGuncelle } from "./ui.js";
+import { bagisPuani } from "./data/clan.js";
 
 // ============================================================
 // OYUN MANTIĞI
@@ -57,6 +62,16 @@ function canSinirlaVeCiz() {
 export function ekipmanKusan(itemId) {
   let item = itemBul(itemId);
   if (item === null || !item.slot) {
+    return;
+  }
+
+    if (itemKusanilabilirMi(item) === false) {
+    bildirimGoster(
+      "<span class='bildirim-baslik'>Seviyen yetersiz</span>" +
+      "<span class='bildirim-icerik'>Gerekli: " +
+      eksikGereksinimYazisi(item) + "</span>",
+      "hata"
+    );
     return;
   }
 
@@ -149,6 +164,7 @@ export function yemekYe() {
   }
 
   slottanTuket("food");
+  istatistikArtir("yenenYemek", 1);
   state.oyuncuHp = state.oyuncuHp + yemek.iyilestirme;
 
   if (state.oyuncuHp > toplamMaxHp()) {
@@ -188,6 +204,7 @@ function otomatikYemekDene() {
   }
 
   slottanTuket("food");
+  istatistikArtir("yenenYemek", 1);
   state.oyuncuHp = state.oyuncuHp + yemek.iyilestirme;
 
   if (state.oyuncuHp > toplamMaxHp()) {
@@ -267,10 +284,16 @@ export function aksiyonBaslat(actionId) {
     girdileriTuket(action, 1);
     ciktilariVer(action, 1);
     xpVer(action.skillId, action.xp);
+    
+        if (action.girdiler) {
+      istatistikArtir("uretilenEsya", 1);
+    } else {
+      istatistikArtir("toplananKaynak", 1);
+    }
 
     state.aksiyonBaslangicZamani = Date.now();
     tumEkraniCiz();
-  }, action.sureMs);
+  }, aksiyonSuresi(action));
 
   tumEkraniCiz();
 }
@@ -294,11 +317,14 @@ function savasKaydiEkle(mesaj) {
 }
 
 function lootDus(monster) {
+  istatistikArtir("oldurulenCanavar", 1);
   let mesajParcalari = [];
 
   if (monster.altinOdulu) {
-    state.altin = state.altin + monster.altinOdulu;
-    mesajParcalari.push("🪙 " + monster.altinOdulu);
+        let altinMiktari = Math.round(monster.altinOdulu * clanAltinCarpani());
+    state.altin = state.altin + altinMiktari;
+    istatistikArtir("kazanilanAltin", altinMiktari);
+    mesajParcalari.push("🪙 " + altinMiktari);
   }
 
   if (monster.lootTablosu) {
@@ -315,12 +341,16 @@ function lootDus(monster) {
       }
 
       // Envanter doluysa loot yere düşer
-      if (itemEkle(loot.itemId, 1) === false) {
+            let miktar = rastgeleMiktar(loot);
+
+      if (itemEkle(loot.itemId, miktar) === false) {
         mesajParcalari.push("⚠️ " + item.isim + " (envanter dolu)");
         continue;
       }
 
-      mesajParcalari.push(item.ikon + " " + item.isim);
+      mesajParcalari.push(
+        item.ikon + " " + item.isim + (miktar > 1 ? " ×" + miktar : "")
+      );
     }
   }
 
@@ -403,6 +433,7 @@ function oyuncuVurusu(monster) {
       return false;
     }
     slottanTuket("ammo");
+    istatistikArtir("atilanOk", 1);
   }
 
   if (Math.random() > oyuncuIsabetSansi(monster)) {
@@ -410,9 +441,17 @@ function oyuncuVurusu(monster) {
     return false;
   }
 
-  let hasar = toplamSaldiri();
+  let hasar = canavaraHasar(monster);
   state.aktifSavasMonsterHp = state.aktifSavasMonsterHp - hasar;
-  savasKaydiEkle("⚔️ " + monster.isim + "'a " + hasar + " hasar");
+  let carpan = tipCarpani(monster);
+  let etki = "";
+  if (carpan > 1) {
+    etki = " (etkili!)";
+  } else if (carpan < 1) {
+    etki = " (zayıf)";
+  }
+
+  savasKaydiEkle("⚔️ " + monster.isim + "'a " + hasar + " hasar" + etki);
 
   if (state.aktifSavasMonsterHp <= 0) {
     savasXpDagit(monster);
@@ -442,6 +481,7 @@ function canavarVurusu(monster) {
 
   if (state.oyuncuHp <= 0) {
     state.oyuncuHp = 1;
+    istatistikArtir("olumSayisi", 1);
     bildirimGoster(
       "<span class='bildirim-baslik'>Öldün</span>" +
       "<span class='bildirim-icerik'>Canın 1'e düştü</span>",
@@ -527,6 +567,7 @@ export function satinAl(itemId) {
   }
 
   state.altin = state.altin - urun.fiyat;
+  istatistikArtir("harcananAltin", urun.fiyat);
 
   let item = itemBul(itemId);
   bildirimGoster(
@@ -555,6 +596,7 @@ export function sat(itemId, adet) {
   let kazanc = item.satisFiyati * adet;
   itemCikar(itemId, adet);
   state.altin = state.altin + kazanc;
+  istatistikArtir("kazanilanAltin", kazanc);
 
   bildirimGoster(
     "<span class='bildirim-baslik'>" + item.ikon + " " + item.isim + " ×" + adet + "</span>" +
@@ -587,11 +629,11 @@ export function envanterSekmesiAc(sekmeId) {
 }
 
 export function envanterSekmesiEkle() {
-  if (state.envanterSekmeleri.length >= state.maxEnvanterSekmesi) {
+  if (state.envanterSekmeleri.length >= state.maxEnvanterSekmesi + clanSekmeBonusu()) {
     bildirimGoster(
       "<span class='bildirim-baslik'>Sekme sınırına ulaştın</span>" +
       "<span class='bildirim-icerik'>En fazla " +
-      state.maxEnvanterSekmesi + " sekme</span>",
+      (state.maxEnvanterSekmesi + clanSekmeBonusu()) + " sekme</span>",
       "hata"
     );
     return;
@@ -740,7 +782,7 @@ export function oyunuSifirla() {
   localStorage.removeItem("idle-realm-kayit");
 
   // Kapanış kaydı araya girip geri yazmasın diye dinleyiciyi kaldırıyoruz
-  window.onbeforeunload = null;
+  state.kayitKapali = true;
   location.reload();
 }
 
@@ -800,6 +842,183 @@ export function kaydiIceAktar() {
   }
 
   localStorage.setItem("idle-realm-kayit", alan.value);
-  window.onbeforeunload = null;
+  state.kayitKapali = true;
   location.reload();
+}
+
+export function bolgeSec(bolgeId) {
+  let bolge = bolgeBul(bolgeId);
+  if (bolge === null) {
+    return;
+  }
+
+  if (bolgeAcikMi(bolge) === false) {
+    bildirimGoster(
+      "<span class='bildirim-baslik'>Bölge kilitli</span>" +
+      "<span class='bildirim-icerik'>Savaş seviyesi " +
+      bolge.gerekliSavasSeviyesi + " gerekli</span>",
+      "hata"
+    );
+    return;
+  }
+
+  state.acikBolgeId = bolgeId;
+  tumEkraniCiz();
+}
+
+// ---------- PROFİL ----------
+
+export function oyuncuAdiDegistir() {
+  let yeni = prompt("Karakter adın:", state.oyuncuAdi);
+
+  if (yeni === null) {
+    return;
+  }
+
+  yeni = yeni.trim();
+
+  if (yeni.length < 2) {
+    bildirimGoster(
+      "<span class='bildirim-baslik'>Çok kısa</span>" +
+      "<span class='bildirim-icerik'>En az 2 karakter</span>",
+      "hata"
+    );
+    return;
+  }
+
+  if (yeni.length > 16) {
+    yeni = yeni.substring(0, 16);
+  }
+
+  state.oyuncuAdi = yeni;
+  tumEkraniCiz();
+}
+
+// ---------- CLAN ----------
+
+export function clanKur() {
+  let isim = prompt("Clan adı (2-20 karakter):");
+
+  if (isim === null) {
+    return;
+  }
+
+  isim = isim.trim();
+
+  if (isim.length < 2) {
+    bildirimGoster(
+      "<span class='bildirim-baslik'>Çok kısa</span>" +
+      "<span class='bildirim-icerik'>En az 2 karakter</span>",
+      "hata"
+    );
+    return;
+  }
+
+  if (isim.length > 20) {
+    isim = isim.substring(0, 20);
+  }
+
+  state.clan = {
+    id: "c_" + Date.now().toString(36),
+    isim: isim,
+    amblem: "🛡️",
+    puan: 0,
+    kurulusTarihi: Date.now(),
+    // Online'a geçince bu liste sunucudan gelecek
+    uyeler: [
+      {
+        oyuncuId: state.oyuncuId,
+        isim: state.oyuncuAdi,
+        rol: "lider",
+        katki: 0
+      }
+    ]
+  };
+
+  bildirimGoster(
+    "<span class='bildirim-baslik'>🛡️ " + isim + "</span>" +
+    "<span class='bildirim-icerik'>Clan kuruldu!</span>"
+  );
+
+  tumEkraniCiz();
+}
+
+export function clanAmblemiDegistir(amblem) {
+  if (state.clan === null) {
+    return;
+  }
+  state.clan.amblem = amblem;
+  tumEkraniCiz();
+}
+
+export function clanDagit() {
+  if (state.clan === null) {
+    return;
+  }
+
+  let onay = confirm(
+    "Clan dağıtılsın mı?\n\n" +
+    "Bağışladığın her şey ve clan seviyesi kaybolacak.\n" +
+    "Bu işlem geri alınamaz."
+  );
+
+  if (onay === false) {
+    return;
+  }
+
+  state.clan = null;
+  tumEkraniCiz();
+}
+
+// Bir eşyanın tamamını veya bir kısmını clana bağışlar
+export function clanaBagisla(itemId, adet) {
+  if (state.clan === null) {
+    return;
+  }
+
+  let item = itemBul(itemId);
+  if (item === null) {
+    return;
+  }
+
+  let elimdeki = envanterdekiMiktar(itemId);
+  if (elimdeki < 1) {
+    return;
+  }
+
+  if (adet > elimdeki) {
+    adet = elimdeki;
+  }
+
+  let puan = bagisPuani(item) * adet;
+
+  let eskiSeviye = clanSeviyesi();
+  itemCikar(itemId, adet);
+  state.clan.puan = state.clan.puan + puan;
+
+  // Üyenin katkısını da kaydet (online'da sıralama için kullanılacak)
+  for (let i = 0; i < state.clan.uyeler.length; i++) {
+    if (state.clan.uyeler[i].oyuncuId === state.oyuncuId) {
+      state.clan.uyeler[i].katki = state.clan.uyeler[i].katki + puan;
+      break;
+    }
+  }
+
+  let yeniSeviye = clanSeviyesi();
+
+  if (yeniSeviye > eskiSeviye) {
+    bildirimGoster(
+      "<span class='bildirim-baslik'>🛡️ " + state.clan.isim + "</span>" +
+      "<span class='bildirim-icerik'>Clan Seviye " + yeniSeviye + "!</span>",
+      "seviye"
+    );
+  } else {
+    bildirimGoster(
+      "<span class='bildirim-baslik'>Bağışlandı</span>" +
+      "<span class='bildirim-icerik'>" + item.ikon + " ×" + adet +
+      " · +" + puan + " puan</span>"
+    );
+  }
+
+  tumEkraniCiz();
 }

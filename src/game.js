@@ -9,7 +9,8 @@ import {
   envanterSekmesiAc, envanterSekmesiEkle, envanterSekmesiSil, itemSekmeDegistir,
   sekmeTikla, ikonIcinSec, ikonSurukleBasla,
   ikonSurukleUzerinde, ikonBirak, ikonSurukleBitti,
-  oyunuSifirla, kaydiDisaAktar, kaydiIceAktar
+  oyunuSifirla, kaydiDisaAktar, kaydiIceAktar,bolgeSec,
+  oyuncuAdiDegistir,  clanKur, clanDagit, clanaBagisla, clanAmblemiDegistir,
 } from "./gameplay.js";
 
 // ============================================================
@@ -46,6 +47,12 @@ window.ikonSurukleBitti = ikonSurukleBitti;
 window.oyunuSifirla = oyunuSifirla;
 window.kaydiDisaAktar = kaydiDisaAktar;
 window.kaydiIceAktar = kaydiIceAktar;
+window.bolgeSec = bolgeSec;
+window.oyuncuAdiDegistir = oyuncuAdiDegistir;
+window.clanKur = clanKur;
+window.clanDagit = clanDagit;
+window.clanaBagisla = clanaBagisla;
+window.clanAmblemiDegistir = clanAmblemiDegistir;
 
 window.menuDevamEt = menuDevamEt;
 window.menuYeniOyun = menuYeniOyun;

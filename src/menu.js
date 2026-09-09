@@ -4,6 +4,8 @@ import {
   oyunuYukle, oyunuKaydet, kayitVarMi, kayitOzeti, kaydiSil
 } from "./save.js";
 import { aksiyonBaslat, savasBaslat, canYenilenmeTuru } from "./gameplay.js";
+import { profilKur } from "./save.js";
+import { istatistikArtir } from "./core.js";
 
 // ============================================================
 // AÇILIŞ MENÜSÜ
@@ -99,6 +101,12 @@ function oyunuBaslat(kayitYuklensinMi) {
       state.devamEdilecekAksiyonId = null;
     }
   }
+  profilKur();
+
+  // Oynama süresini say
+  setInterval(function () {
+    istatistikArtir("toplamOyunSuresiMs", 10000);
+  }, 10000);
 
   menuyuKapat();
   tumEkraniCiz();

@@ -933,3 +933,258 @@ body {
   color: var(--text-dim);
   margin-top: 4px;
 }
+
+.bolge-secici {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.bolge-oge {
+  flex: 1;
+  min-width: 130px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.bolge-oge:hover {
+  border-color: var(--accent);
+}
+
+.bolge-oge.aktif {
+  border-color: var(--accent);
+  background: #2a3550;
+}
+
+.bolge-oge.kilitli {
+  opacity: 0.45;
+  border-style: dashed;
+  cursor: not-allowed;
+}
+
+.bolge-ikon {
+  font-size: 1.5rem;
+}
+
+.bolge-isim {
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.bolge-alt {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+.bolge-aciklama {
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  font-style: italic;
+  margin-bottom: 12px;
+  padding: 0 2px;
+}
+
+.ustalik-satiri {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.ustalik-etiket {
+  font-size: 0.72rem;
+  color: #b07cff;
+  white-space: nowrap;
+}
+
+.ustalik-cubuk {
+  flex: 1;
+  height: 3px;
+  background: #0d0f14;
+  border-radius: 2px;
+  overflow: hidden;
+  max-width: 120px;
+}
+
+.ustalik-dolu {
+  display: block;
+  height: 100%;
+  background: #b07cff;
+}
+
+.ilerleme-dolu.mor {
+  background: #b07cff;
+  transition: width 0.3s;
+}
+
+.bildirim.ustalik {
+  border-color: #b07cff;
+}
+
+.bildirim.ustalik .bildirim-icerik {
+  color: #b07cff;
+}
+
+.tip-rozeti {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.tip-rozeti.avantaj {
+  border-color: var(--hp-player);
+  color: var(--hp-player);
+  background: rgba(95, 214, 122, 0.08);
+}
+
+.tip-rozeti.dezavantaj {
+  border-color: var(--hp-enemy);
+  color: var(--hp-enemy);
+  background: rgba(255, 92, 92, 0.08);
+}
+
+.profil-karti {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.profil-avatar {
+  font-size: 2.4rem;
+  width: 58px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #14161c;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.profil-bilgi {
+  flex: 1;
+  min-width: 0;
+}
+
+.profil-ad {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.profil-alt {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  margin-top: 3px;
+}
+
+.clan-karti {
+  background: var(--panel);
+  border: 1px solid var(--gold);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.clan-amblem {
+  font-size: 2.4rem;
+  width: 58px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #14161c;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.clan-bilgi {
+  flex: 1;
+  min-width: 0;
+}
+
+.clan-ad {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.clan-alt {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  margin-top: 3px;
+}
+
+.rol-rozeti {
+  font-size: 0.65rem;
+  background: var(--gold);
+  color: #14161c;
+  padding: 2px 7px;
+  border-radius: 8px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.amblem-secici {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.amblem-oge {
+  width: 46px;
+  height: 46px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+
+.amblem-oge:hover {
+  border-color: var(--accent);
+}
+
+.amblem-oge.aktif {
+  border-color: var(--gold);
+  background: #2a2620;
+}
+
+.kart.basarim-acik {
+  border-color: var(--gold);
+  background: #221f19;
+}
+
+.bildirim.basarim {
+  border-color: var(--gold);
+}
+
+.bildirim.basarim .bildirim-icerik {
+  color: var(--gold);
+}

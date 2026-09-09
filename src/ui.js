@@ -4,8 +4,11 @@ import { actions } from "./data/actions.js";
 import { monsters } from "./data/monsters.js";
 import { slotDuzeni } from "./data/slots.js";
 import { dukkanUrunleri } from "./data/shop.js";
-import { yardimlar } from "./data/help.js";
 import { state, CAN_YENILENME_MS } from "./state.js";
+import { bolgeler } from "./data/regions.js";
+import { yardimlar, ustalikBolumu } from "./data/help.js";
+import { clanBonuslari, bagisPuani } from "./data/clan.js";
+import { basarimlar } from "./data/achievements.js";
 import {
   skillBul, itemBul, actionBul, slotBul,
   seviyeHesapla, seviyeBilgisi, skillSeviyesi,
@@ -15,7 +18,13 @@ import {
   oyuncuIsabetSansi, canavarIsabetSansi,
   oyuncuSaldiriHizi, gelenHasar, savasSeviyesi, menzilliMi,
   aksiyonAcikMi, aksiyonSeviyeGerekli, girdilerYeterliMi,
-  okluSilahMi, slotYiginMi, slotAdedi, slotItemi
+  okluSilahMi, slotYiginMi, slotAdedi, slotItemi,
+  itemKusanilabilirMi, eksikGereksinimYazisi,
+  bolgeBul, bolgeAcikMi, bolgeninCanavarlari,
+  ustalikBilgisi, ustalikHizBonusu, aksiyonSuresi, skillUstalikYuzdesi,
+  canavarTipiBul, tipCarpani, canavaraHasar,
+  clanVarMi, clanSeviyeBilgisi, clanSeviyesi, envanterKapasitesi,
+  clanHizBonusu, basarimAcikMi, basarimIlerlemesi, gosterilecekBasarimlar
 } from "./core.js";
 
 // ============================================================
@@ -66,17 +75,29 @@ function yardimPaneli(sayfaId) {
   let html = "<div class='yardim-panel'>";
   html = html + "<div class='yardim-ozet'>" + yardim.ozet + "</div>";
 
+    // Toplama/üretim yeteneklerine ustalık bölümünü otomatik ekle
+  let bolumler = [];
   if (yardim.bolumler) {
     for (let i = 0; i < yardim.bolumler.length; i++) {
-      let bolum = yardim.bolumler[i];
-      html = html + "<div class='yardim-bolum-baslik'>" + bolum.baslik + "</div><ul>";
-
-      for (let s = 0; s < bolum.satirlar.length; s++) {
-        html = html + "<li>" + bolum.satirlar[s] + "</li>";
-      }
-
-      html = html + "</ul>";
+      bolumler.push(yardim.bolumler[i]);
     }
+  }
+
+  let skill = skillBul(sayfaId);
+  if (skill !== null && skill.kategori === "nonCombat") {
+    bolumler.push(ustalikBolumu);
+  }
+  if (yardim.bolumler) {
+      for (let i = 0; i < bolumler.length; i++) {
+    let bolum = bolumler[i];
+    html = html + "<div class='yardim-bolum-baslik'>" + bolum.baslik + "</div><ul>";
+
+    for (let s = 0; s < bolum.satirlar.length; s++) {
+      html = html + "<li>" + bolum.satirlar[s] + "</li>";
+    }
+
+    html = html + "</ul>";
+  }
   }
 
   if (yardim.ipuclari && yardim.ipuclari.length > 0) {
@@ -209,6 +230,7 @@ function ekipmanIzgarasiHtml() {
       }
 
       bulundu = true;
+      let kusanabilirMi = itemKusanilabilirMi(item);
 
       let adetYazisi = "";
       if (slotYiginMi(state.secilenSlot)) {
@@ -216,11 +238,18 @@ function ekipmanIzgarasiHtml() {
       }
 
       html = html +
-        "<div class='kart'><span class='aksiyon-bilgi'>" +
-        "<strong>" + item.ikon + " " + item.isim + "</strong>" +
+        "<div class='kart" + (kusanabilirMi ? "" : " kilitli") + "'>" +
+        "<span class='aksiyon-bilgi'>" +
+        "<strong>" + (kusanabilirMi ? "" : "🔒 ") +
+        item.ikon + " " + item.isim + "</strong>" +
         "<span class='alt-bilgi'>" + bonusYazisi(item) + adetYazisi + "</span>" +
+        (kusanabilirMi
+          ? ""
+          : "<span class='alt-bilgi yetersiz'>Gerekli: " +
+            eksikGereksinimYazisi(item) + "</span>") +
         "</span>" +
-        "<button onclick='ekipmanKusan(\"" + item.id + "\")'>Kuşan</button></div>";
+        "<button onclick='ekipmanKusan(\"" + item.id + "\")'" +
+        (kusanabilirMi ? "" : " disabled") + ">Kuşan</button></div>";
     }
 
     if (bulundu === false) {
@@ -273,7 +302,7 @@ function menuCiz() {
     "<span class='menu-ikon'>🎒</span>" +
     "<span class='menu-isim'>Envanter</span>" +
     "<span class='menu-seviye'>" + envanterKullanilan() + "/" +
-    state.envanterKapasitesi + "</span>" +
+    envanterKapasitesi() + "</span>" +
     "</div>";
 
   html = html +
@@ -282,6 +311,32 @@ function menuCiz() {
     "<span class='menu-ikon'>🏪</span>" +
     "<span class='menu-isim'>Dükkân</span>" +
     "<span class='menu-seviye'>" + state.altin + "</span>" +
+    "</div>";
+
+  html = html +
+    "<div class='menu-oge" + (state.acikSekme === "clan" ? " aktif" : "") + "' " +
+    "onclick='sekmeAc(\"clan\")'>" +
+    "<span class='menu-ikon'>" +
+    (state.clan !== null ? state.clan.amblem : "🛡️") + "</span>" +
+    "<span class='menu-isim'>Clan</span>" +
+    (state.clan !== null
+      ? "<span class='menu-seviye'>" + clanSeviyesi() + "</span>"
+      : "") +
+    "</div>";
+
+      html = html +
+    "<div class='menu-oge" + (state.acikSekme === "achievements" ? " aktif" : "") + "' " +
+    "onclick='sekmeAc(\"achievements\")'>" +
+    "<span class='menu-ikon'>🏆</span>" +
+    "<span class='menu-isim'>Başarımlar</span>" +
+    "<span class='menu-seviye'>" + state.acilanBasarimlar.length + "</span>" +
+    "</div>";
+
+      html = html +
+    "<div class='menu-oge" + (state.acikSekme === "stats" ? " aktif" : "") + "' " +
+    "onclick='sekmeAc(\"stats\")'>" +
+    "<span class='menu-ikon'>📊</span>" +
+    "<span class='menu-isim'>İstatistikler</span>" +
     "</div>";
 
   html = html +
@@ -330,14 +385,36 @@ function skillEkraniCiz(acikSkill) {
     "<div class='xp-panel'>" +
     "<div class='xp-ust'>" +
     "<span class='xp-seviye'>Seviye " + bilgi.seviye + "</span>" +
-    "<span class='xp-detay'>" + bilgi.seviyedeKazanilan + " / " +
-    bilgi.seviyedeGereken + " XP</span>" +
+    "<span class='xp-detay'>" +
+    (bilgi.maxMi
+      ? "MAX"
+      : bilgi.seviyedeKazanilan.toLocaleString() + " / " +
+        bilgi.seviyedeGereken.toLocaleString() + " XP") +
+    "</span>" +
     "</div>" +
     "<div class='ilerleme'><div class='ilerleme-dolu altin' style='width:" +
     bilgi.yuzde + "%'></div></div>" +
-    "<div class='xp-alt'>Toplam " + acikSkill.xp + " XP · Sonraki seviyeye " +
-    bilgi.sonrakineKalan + " XP</div>" +
+    "<div class='xp-alt'>Toplam " + acikSkill.xp.toLocaleString() + " XP" +
+    (bilgi.maxMi
+      ? " · ⭐ Maksimum seviye!"
+      : " · Sonraki seviyeye " + bilgi.sonrakineKalan.toLocaleString() + " XP") +
+    "</div>" +
     "</div>";
+
+  if (acikSkill.kategori !== "combat") {
+    let ustalikYuzde = skillUstalikYuzdesi(acikSkill.id);
+    html = html +
+      "<div class='xp-panel'>" +
+      "<div class='xp-ust'>" +
+      "<span class='xp-seviye'>⭐ Ustalık İlerlemesi</span>" +
+      "<span class='xp-detay'>%" + ustalikYuzde.toFixed(1) + "</span>" +
+      "</div>" +
+      "<div class='ilerleme'><div class='ilerleme-dolu mor' style='width:" +
+      ustalikYuzde + "%'></div></div>" +
+      "<div class='xp-alt'>Her aksiyonun ayrı ustalığı var. " +
+      "Ustalık arttıkça o aksiyon hızlanır (her 10 seviyede %5, en fazla %40).</div>" +
+      "</div>";
+  }
 
   // Savaş yeteneklerinin kendi aksiyonu yok - açıklaması yardım panelinde
   if (acikSkill.kategori === "combat") {
@@ -411,15 +488,33 @@ function skillEkraniCiz(acikSkill) {
       }
     }
 
+    let ustalik = ustalikBilgisi(action.id);
+    let ustalikBonusu = ustalikHizBonusu(action.id);
+    let clanBonusu = clanHizBonusu();
+    let hizBonusu = ustalikBonusu + clanBonusu;
+    let gercekSure = aksiyonSuresi(action);
+
     html = html +
       "<div class='kart " + (buAksiyonAktif ? "aktif-kart" : "") + "'>" +
       "<span class='aksiyon-bilgi'>" +
       "<strong>" + action.isim + "</strong>" +
       "<span class='alt-bilgi'>Üretir: " + ciktiYazisi +
-      " · " + (action.sureMs / 1000) + "sn · +" + action.xp + " XP" +
+      " · " + (gercekSure / 1000).toFixed(1) + "sn" +
+            (hizBonusu > 0
+        ? " <span class='yeterli' title='" +
+          "Ustalık: %" + Math.round(ustalikBonusu * 100) +
+          " · Clan: %" + Math.round(clanBonusu * 100) +
+          "'>(-%" + Math.round(hizBonusu * 100) + ")</span>"
+        : "") +
+      " · +" + action.xp + " XP" +
       stokYazisi + "</span>" +
       girdiYazisi +
       sansliYazisi +
+      "<span class='ustalik-satiri'>" +
+      "<span class='ustalik-etiket'>⭐ Ustalık " + ustalik.seviye + "</span>" +
+      "<span class='ustalik-cubuk'><span class='ustalik-dolu' style='width:" +
+      ustalik.yuzde + "%'></span></span>" +
+      "</span>" +
       "</span>" +
       "<button onclick='" +
       (buAksiyonAktif
@@ -511,8 +606,43 @@ function savasEkraniCiz() {
     "</div>";
 
   // --- Canavarlar ---
-  for (let i = 0; i < monsters.length; i++) {
-    let monster = monsters[i];
+    // --- Bölge seçici ---
+  html = html + "<div class='baslik'>Bölgeler</div><div class='bolge-secici'>";
+
+  for (let i = 0; i < bolgeler.length; i++) {
+    let bolge = bolgeler[i];
+    let acikMi = bolgeAcikMi(bolge);
+
+    html = html +
+      "<div class='bolge-oge" +
+      (state.acikBolgeId === bolge.id ? " aktif" : "") +
+      (acikMi ? "" : " kilitli") + "' " +
+      "onclick='bolgeSec(\"" + bolge.id + "\")'>" +
+      "<span class='bolge-ikon'>" + (acikMi ? bolge.ikon : "🔒") + "</span>" +
+      "<span class='bolge-isim'>" + bolge.isim + "</span>" +
+      "<span class='bolge-alt'>" +
+      (acikMi
+        ? bolgeninCanavarlari(bolge.id).length + " canavar"
+        : "Savaş Sv " + bolge.gerekliSavasSeviyesi) +
+      "</span>" +
+      "</div>";
+  }
+
+  html = html + "</div>";
+
+  // --- Seçili bölgenin canavarları ---
+  let acikBolge = bolgeBul(state.acikBolgeId);
+
+  if (acikBolge !== null) {
+    html = html +
+      "<div class='bolge-aciklama'>" + acikBolge.ikon + " " +
+      acikBolge.aciklama + "</div>";
+  }
+
+  let bolgeCanavarlari = bolgeninCanavarlari(state.acikBolgeId);
+
+  for (let i = 0; i < bolgeCanavarlari.length; i++) {
+    let monster = bolgeCanavarlari[i];
     let gosterilecekHp = monster.maxHp;
     let buCanavarAktif = state.aktifSavasMonsterId === monster.id;
 
@@ -527,17 +657,37 @@ function savasEkraniCiz() {
 
     let benimIsabet = Math.round(oyuncuIsabetSansi(monster) * 100);
     let onunIsabet = Math.round(canavarIsabetSansi(monster) * 100);
+    let tip = canavarTipiBul(monster.tipId);
+    let carpan = tipCarpani(monster);
+
+    let tipRozeti = "";
+    if (tip !== null) {
+      let sinif = "notr";
+      let ok = "";
+      if (carpan > 1) {
+        sinif = "avantaj";
+        ok = " ▲";
+      } else if (carpan < 1) {
+        sinif = "dezavantaj";
+        ok = " ▼";
+      }
+
+      tipRozeti =
+        "<span class='tip-rozeti " + sinif + "' title='" + tip.aciklama + "'>" +
+        tip.ikon + " " + tip.isim + ok + "</span>";
+    }
 
     html = html +
       "<div class='kart " + (buCanavarAktif ? "aktif-kart" : "") + "'>" +
       "<span class='aksiyon-bilgi'>" +
-      "<strong>" + monster.ikon + " " + monster.isim + "</strong>" +
+      "<strong>" + monster.ikon + " " + monster.isim + " " + tipRozeti + "</strong>" +
       "<span class='alt-bilgi'>" +
       "Vurma şansın %" + benimIsabet +
       " · sana vurma şansı %" + onunIsabet +
       "</span>" +
       "<span class='alt-bilgi'>" +
-      "Vuruşu " + gelenHasar(monster.saldiri) + " hasar · " +
+      "Ona " + canavaraHasar(monster) + " hasar verirsin · " +
+      "sana " + gelenHasar(monster.saldiri) + " hasar · " +
       "her " + (monster.saldiriHiziMs / 1000) + "sn'de bir · " +
       "+" + monster.xpOdulu + " XP</span>" +
       "</span>" +
@@ -662,7 +812,7 @@ function karakterEkraniCiz() {
 
 function envanterEkraniCiz() {
   let kullanilan = envanterKullanilan();
-  let kapasite = state.envanterKapasitesi;
+  let kapasite = envanterKapasitesi();
   let doluluk = (kullanilan / kapasite) * 100;
 
   let html = sayfaBasligi("inventory", "🎒 Envanter");
@@ -856,6 +1006,341 @@ function dukkanEkraniCiz() {
   icerikAlani.innerHTML = html;
 }
 
+// ---------- İSTATİSTİK EKRANI ----------
+
+function sureBicimle(ms) {
+  let saniye = Math.floor(ms / 1000);
+  let dakika = Math.floor(saniye / 60);
+  let saat = Math.floor(dakika / 60);
+
+  if (saat > 0) {
+    return saat + " saat " + (dakika % 60) + " dk";
+  }
+  if (dakika > 0) {
+    return dakika + " dakika";
+  }
+  return saniye + " saniye";
+}
+
+function istatistikSatiri(ikon, etiket, deger) {
+  return (
+    "<div class='kart'><span class='aksiyon-bilgi'>" +
+    "<strong>" + ikon + " " + etiket + "</strong></span>" +
+    "<span class='deger'>" + deger + "</span></div>"
+  );
+}
+
+function istatistikEkraniCiz() {
+  let ist = state.istatistik;
+
+  let html = sayfaBasligi("stats", "📊 İstatistikler");
+
+  // --- Profil ---
+  let toplamSeviye = 0;
+  let toplamXp = 0;
+  for (let i = 0; i < skills.length; i++) {
+    toplamSeviye = toplamSeviye + seviyeHesapla(skills[i].xp);
+    toplamXp = toplamXp + skills[i].xp;
+  }
+
+  html = html +
+    "<div class='profil-karti'>" +
+    "<div class='profil-avatar'>🧙</div>" +
+    "<div class='profil-bilgi'>" +
+    "<div class='profil-ad'>" + state.oyuncuAdi + "</div>" +
+    "<div class='profil-alt'>Toplam Seviye " + toplamSeviye +
+    " · " + toplamXp.toLocaleString() + " XP</div>" +
+    "</div>" +
+    "<button onclick='oyuncuAdiDegistir()'>Adı Değiştir</button>" +
+    "</div>";
+
+  html = html + "<div class='baslik'>Genel</div>";
+  html = html + istatistikSatiri("⏱️", "Oynama süresi",
+    sureBicimle(ist.toplamOyunSuresiMs));
+  html = html + istatistikSatiri("📅", "Oyuna başlama",
+    new Date(state.oyunBaslangici).toLocaleDateString("tr-TR"));
+
+  html = html + "<div class='baslik'>Üretim</div>";
+  html = html + istatistikSatiri("🌿", "Toplanan kaynak",
+    ist.toplananKaynak.toLocaleString());
+  html = html + istatistikSatiri("🔨", "Üretilen eşya",
+    ist.uretilenEsya.toLocaleString());
+  html = html + istatistikSatiri("⭐", "Ustalık seviyesi atlama",
+    ist.ustalikSeviyeAtlama.toLocaleString());
+
+  html = html + "<div class='baslik'>Savaş</div>";
+  html = html + istatistikSatiri("💀", "Öldürülen canavar",
+    ist.oldurulenCanavar.toLocaleString());
+  html = html + istatistikSatiri("🏹", "Atılan ok",
+    ist.atilanOk.toLocaleString());
+  html = html + istatistikSatiri("🍤", "Yenen yemek",
+    ist.yenenYemek.toLocaleString());
+  html = html + istatistikSatiri("⚰️", "Ölüm sayısı",
+    ist.olumSayisi.toLocaleString());
+
+  html = html + "<div class='baslik'>Ekonomi</div>";
+  html = html + istatistikSatiri("🪙", "Kazanılan altın",
+    ist.kazanilanAltin.toLocaleString());
+  html = html + istatistikSatiri("💸", "Harcanan altın",
+    ist.harcananAltin.toLocaleString());
+
+  icerikAlani.innerHTML = html;
+}
+
+// ---------- CLAN EKRANI ----------
+
+function clanEkraniCiz() {
+  let html = sayfaBasligi("clan", "🛡️ Clan");
+
+  // --- Clan yoksa kurulum ekranı ---
+  if (clanVarMi() === false) {
+    html = html +
+      "<div class='kart'>" +
+      "<span class='aksiyon-bilgi'>" +
+      "<strong>Henüz bir clanın yok</strong>" +
+      "<span class='alt-bilgi'>Clan kurup kaynak bağışlayarak clan seviyeni " +
+      "yükseltebilirsin. Clan seviyesi tüm üyelere kalıcı bonuslar verir.</span>" +
+      "</span>" +
+      "<button onclick='clanKur()'>Clan Kur</button>" +
+      "</div>";
+
+    // Neler kazanacağını göster - motivasyon
+    html = html + "<div class='baslik'>Clan Bonusları</div>";
+
+    for (let i = 0; i < clanBonuslari.length; i++) {
+      let bonus = clanBonuslari[i];
+      html = html +
+        "<div class='kart kilitli'>" +
+        "<span class='aksiyon-bilgi'>" +
+        "<strong>" + bonus.ikon + " " + bonus.isim + "</strong>" +
+        "<span class='alt-bilgi'>" + bonus.aciklama + "</span>" +
+        "</span>" +
+        "<span class='deger'>Sv " + bonus.seviye + "</span>" +
+        "</div>";
+    }
+
+    icerikAlani.innerHTML = html;
+    return;
+  }
+
+  // --- Clan varsa ana panel ---
+  let clan = state.clan;
+  let bilgi = clanSeviyeBilgisi();
+
+  html = html +
+    "<div class='clan-karti'>" +
+    "<div class='clan-amblem'>" + clan.amblem + "</div>" +
+    "<div class='clan-bilgi'>" +
+    "<div class='clan-ad'>" + clan.isim + "</div>" +
+    "<div class='clan-alt'>Seviye " + bilgi.seviye + " · " +
+    clan.uyeler.length + " üye · " +
+    clan.puan.toLocaleString() + " puan</div>" +
+    "</div>" +
+    "</div>";
+
+  // Seviye çubuğu
+  html = html +
+    "<div class='xp-panel'>" +
+    "<div class='xp-ust'>" +
+    "<span class='xp-seviye'>Clan Seviyesi " + bilgi.seviye + "</span>" +
+    "<span class='xp-detay'>" +
+    (bilgi.maxMi
+      ? "MAX"
+      : bilgi.kazanilan.toLocaleString() + " / " +
+        bilgi.gereken.toLocaleString()) +
+    "</span></div>" +
+    "<div class='ilerleme'><div class='ilerleme-dolu altin' style='width:" +
+    bilgi.yuzde + "%'></div></div>" +
+    "<div class='xp-alt'>Kaynak bağışlayarak clan seviyesini yükselt. " +
+    "Her seviye tüm üyelere fayda sağlar.</div>" +
+    "</div>";
+
+  // --- Bonuslar ---
+  html = html + "<div class='baslik'>Bonuslar</div>";
+
+  for (let i = 0; i < clanBonuslari.length; i++) {
+    let bonus = clanBonuslari[i];
+    let acikMi = bilgi.seviye >= bonus.seviye;
+
+    html = html +
+      "<div class='kart" + (acikMi ? "" : " kilitli") + "'>" +
+      "<span class='aksiyon-bilgi'>" +
+      "<strong>" + (acikMi ? bonus.ikon : "🔒") + " " + bonus.isim + "</strong>" +
+      "<span class='alt-bilgi'>" + bonus.aciklama + "</span>" +
+      "</span>" +
+      "<span class='deger'>" + (acikMi ? "AÇIK" : "Sv " + bonus.seviye) + "</span>" +
+      "</div>";
+  }
+
+  // --- Bağış ---
+  html = html + "<div class='baslik'>Bağış</div>";
+
+  let bagislanabilir = envanterSirali(null);
+  let bagisVarMi = false;
+
+  for (let i = 0; i < bagislanabilir.length; i++) {
+    let kayit = bagislanabilir[i];
+    let puanBirim = bagisPuani(kayit.item);
+
+    // Kuşanılabilir eşyaları bağış listesinde göstermiyoruz -
+    // yanlışlıkla değerli ekipmanını vermesin
+    if (kayit.item.slot) {
+      continue;
+    }
+
+    bagisVarMi = true;
+
+    html = html +
+      "<div class='kart'>" +
+      "<span class='aksiyon-bilgi'>" +
+      "<strong>" + kayit.item.ikon + " " + kayit.item.isim + "</strong>" +
+      "<span class='alt-bilgi'>Elinde " + kayit.miktar +
+      " · tanesi " + puanBirim + " puan</span>" +
+      "</span>" +
+      "<button onclick='clanaBagisla(\"" + kayit.item.id + "\", 1)'>1</button>" +
+      "<button onclick='clanaBagisla(\"" + kayit.item.id + "\", " +
+      kayit.miktar + ")'>Hepsi (+" + (puanBirim * kayit.miktar) + ")</button>" +
+      "</div>";
+  }
+
+  if (bagisVarMi === false) {
+    html = html +
+      "<div class='kart'><span class='alt-bilgi'>" +
+      "Bağışlanacak malzemen yok. Ekipmanlar bağışlanamaz.</span></div>";
+  }
+
+  // --- Üyeler ---
+  html = html + "<div class='baslik'>Üyeler</div>";
+
+  for (let i = 0; i < clan.uyeler.length; i++) {
+    let uye = clan.uyeler[i];
+
+    html = html +
+      "<div class='kart'>" +
+      "<span class='aksiyon-bilgi'>" +
+      "<strong>🧙 " + uye.isim +
+      (uye.rol === "lider" ? " <span class='rol-rozeti'>Lider</span>" : "") +
+      "</strong>" +
+      "<span class='alt-bilgi'>Katkı: " + uye.katki.toLocaleString() +
+      " puan</span>" +
+      "</span></div>";
+  }
+
+  html = html +
+    "<div class='kart'><span class='alt-bilgi'>" +
+    "🌐 Çevrimiçi özellikler henüz hazır değil. Şimdilik clan sadece senin. " +
+    "Sunucu geldiğinde arkadaşların katılabilecek ve birlikte bağış yapabileceksiniz." +
+    "</span></div>";
+
+  // --- Amblem seçimi ---
+  html = html + "<div class='baslik'>Amblem</div><div class='amblem-secici'>";
+
+  let amblemler = ["🛡️", "⚔️", "🐺", "🔥", "🌲", "⭐", "🐉", "👑", "🦅", "⚡"];
+
+  for (let i = 0; i < amblemler.length; i++) {
+    html = html +
+      "<div class='amblem-oge" +
+      (clan.amblem === amblemler[i] ? " aktif" : "") + "' " +
+      "onclick='clanAmblemiDegistir(\"" + amblemler[i] + "\")'>" +
+      amblemler[i] + "</div>";
+  }
+
+  html = html + "</div>";
+
+  // --- Dağıtma ---
+  html = html +
+    "<div class='kart tehlike'>" +
+    "<span class='aksiyon-bilgi'><strong>Clanı Dağıt</strong>" +
+    "<span class='alt-bilgi'>Tüm bağışlar ve clan seviyesi silinir. " +
+    "Geri alınamaz.</span></span>" +
+    "<button onclick='clanDagit()'>Dağıt</button>" +
+    "</div>";
+
+  icerikAlani.innerHTML = html;
+}
+
+// ---------- BAŞARIM EKRANI ----------
+
+function basarimEkraniCiz() {
+  let html = sayfaBasligi("achievements", "🏆 Başarımlar");
+
+  let toplam = basarimlar.length;
+  let acilan = state.acilanBasarimlar.length;
+  let yuzde = (acilan / toplam) * 100;
+
+  html = html +
+    "<div class='xp-panel'>" +
+    "<div class='xp-ust'>" +
+    "<span class='xp-seviye'>Tamamlanan</span>" +
+    "<span class='xp-detay'>" + acilan + " / " + toplam + "</span>" +
+    "</div>" +
+    "<div class='ilerleme'><div class='ilerleme-dolu altin' style='width:" +
+    yuzde + "%'></div></div>" +
+    "<div class='xp-alt'>Her başarımdan sonrakiler sırayla açılır. " +
+    "Bazıları gizlidir.</div>" +
+    "</div>";
+
+  let liste = gosterilecekBasarimlar();
+  let sonGrup = "";
+
+  for (let i = 0; i < liste.length; i++) {
+    let b = liste[i];
+    let acikMi = basarimAcikMi(b.id);
+    let gizliMi = b.gizli && acikMi === false;
+
+    if (b.grup !== sonGrup) {
+      html = html + "<div class='baslik'>" + b.grup + "</div>";
+      sonGrup = b.grup;
+    }
+
+    // Gizli ve henüz açılmamışsa detay verme
+    if (gizliMi) {
+      html = html +
+        "<div class='kart kilitli'>" +
+        "<span class='aksiyon-bilgi'>" +
+        "<strong>❓ Gizli Başarım</strong>" +
+        "<span class='alt-bilgi'>Oynarken kendiliğinden açılacak</span>" +
+        "</span></div>";
+      continue;
+    }
+
+    let ilerleme = basarimIlerlemesi(b);
+
+    let odulYazisi = "";
+    if (b.odul) {
+      if (b.odul.altin) {
+        odulYazisi = "🪙 " + b.odul.altin;
+      }
+      if (b.odul.itemId) {
+        let item = itemBul(b.odul.itemId);
+        if (item !== null) {
+          odulYazisi = item.ikon + " ×" + b.odul.miktar;
+        }
+      }
+    }
+
+    html = html +
+      "<div class='kart" + (acikMi ? " basarim-acik" : "") + "'>" +
+      "<span class='aksiyon-bilgi'>" +
+      "<strong>" + (acikMi ? "🏆" : b.ikon) + " " + b.isim + "</strong>" +
+      "<span class='alt-bilgi'>" + b.aciklama +
+      (odulYazisi !== "" ? " · Ödül: " + odulYazisi : "") + "</span>" +
+      (acikMi
+        ? "<span class='alt-bilgi yeterli'>✓ Tamamlandı</span>"
+        : "<span class='alt-bilgi'>" +
+          ilerleme.mevcut.toLocaleString() + " / " +
+          ilerleme.hedef.toLocaleString() + "</span>") +
+      "</span>" +
+      (acikMi
+        ? ""
+        : "<div class='ilerleme'><div class='ilerleme-dolu mavi' style='width:" +
+          ilerleme.yuzde + "%'></div></div>") +
+      "</div>";
+  }
+
+  icerikAlani.innerHTML = html;
+}
+
 // ---------- AYARLAR EKRANI ----------
 
 function ayarlarEkraniCiz() {
@@ -924,10 +1409,23 @@ function icerikCiz() {
     ayarlarEkraniCiz();
     return;
   }
+    if (state.acikSekme === "stats") {
+    istatistikEkraniCiz();
+    return;
+  }
+  if (state.acikSekme === "clan") {
+    clanEkraniCiz();
+    return;
+  }
 
   let acikSkill = skillBul(state.acikSekme);
   if (acikSkill !== null) {
     skillEkraniCiz(acikSkill);
+  }
+
+    if (state.acikSekme === "achievements") {
+    basarimEkraniCiz();
+    return;
   }
 }
 
@@ -959,7 +1457,8 @@ export function cubuklariGuncelle() {
   if (aksiyonCubugu !== null && state.aktifAksiyonId !== null) {
     let action = actionBul(state.aktifAksiyonId);
     if (action !== null) {
-      let yuzde = ((Date.now() - state.aksiyonBaslangicZamani) / action.sureMs) * 100;
+    let yuzde = ((Date.now() - state.aksiyonBaslangicZamani) /
+        aksiyonSuresi(action)) * 100;
       if (yuzde > 100) {
         yuzde = 100;
       }

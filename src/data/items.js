@@ -81,6 +81,7 @@ export let items = [
     isim: "Kısa Yay",
     ikon: "🎯",
     slot: "weapon",
+    gereksinimler: [{ skillId: "ranged", seviye: 5 }],
     saldiriBonusu: 5,
     isabetBonusu: 8,
     hizMs: 3200,
@@ -132,6 +133,7 @@ export let items = [
     isim: "Goblin Zırhı",
     ikon: "🥋",
     slot: "body",
+    gereksinimler: [{ skillId: "defence", seviye: 5 }],
     savunmaBonusu: 9,
     satisFiyati: 25
   },
@@ -161,5 +163,24 @@ export let items = [
     saldiriBonusu: 2,
     isabetBonusu: 2,
     satisFiyati: 20
+  },
+  {
+    id: "wolf_pelt",
+    isim: "Kurt Postu",
+    ikon: "🟫",
+    slot: "cape",
+    savunmaBonusu: 4,
+    gereksinimler: [{ skillId: "defence", seviye: 8 }],
+    satisFiyati: 20
+  },
+  {
+    id: "bandit_hood",
+    isim: "Haydut Başlığı",
+    ikon: "🎭",
+    slot: "helmet",
+    savunmaBonusu: 5,
+    isabetBonusu: 4,
+    gereksinimler: [{ skillId: "attack", seviye: 10 }],
+    satisFiyati: 45
   }
 ];

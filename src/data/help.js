@@ -111,6 +111,58 @@ export let yardimlar = {
     ]
   },
 
+    clan: {
+    ozet: "Clan kurup kaynak bağışlayarak tüm üyelere fayda sağlayan bonuslar açarsın.",
+    bolumler: [
+      {
+        baslik: "Nasıl çalışır",
+        satirlar: [
+          "Envanterindeki fazla malzemeleri clan deposuna bağışlarsın.",
+          "Her bağış clan puanı kazandırır, puan birikince clan seviye atlar.",
+          "Clan seviyesi belirli eşiklere ulaşınca kalıcı bonuslar açılır.",
+          "Ekipmanlar bağışlanamaz — sadece malzemeler."
+        ]
+      },
+      {
+        baslik: "Bonuslar hakkında",
+        satirlar: [
+          "Bonuslar bilinçli olarak mütevazı tutuldu.",
+          "Clansız oynayan biri geri kalmaz, sadece biraz yavaş ilerler.",
+          "Amaç zorunluluk değil, fazla kaynağa anlam katmak."
+        ]
+      },
+      {
+        baslik: "Çevrimiçi durumu",
+        satirlar: [
+          "Şu an clan sadece sana ait — tek üyesi sensin.",
+          "Sunucu altyapısı hazır olduğunda arkadaşların katılabilecek.",
+          "Bağışların ve clan seviyen o zaman da korunacak."
+        ]
+      }
+    ],
+    ipuclari: [
+      "Kemik gibi biriken ama işe yaramayan malzemeler bağış için idealdir.",
+      "Satmak mı bağışlamak mı daha iyi? Altına ihtiyacın varsa sat, yoksa bağışla."
+    ]
+  },
+
+    stats: {
+    ozet: "Karakterin ve oyun boyunca yaptıkların.",
+    bolumler: [
+      {
+        baslik: "Ne işe yarar",
+        satirlar: [
+          "Buradaki sayaçlar oyun boyunca birikir ve hiç sıfırlanmaz.",
+          "İleride başarımlar ve clan katkısı bu sayaçların üstüne kurulacak.",
+          "Karakter adını buradan değiştirebilirsin."
+        ]
+      }
+    ],
+    ipuclari: [
+      "Adın ileride online özelliklerde diğer oyunculara görünecek."
+    ]
+  },
+
   combat: {
     ozet: "Canavarlarla dövüşerek savaş yeteneklerini geliştirir, altın ve nadir eşya kazanırsın.",
     bolumler: [
@@ -131,6 +183,16 @@ export let yardimlar = {
           "Yay kuşanırsan stil otomatik olarak Menzilli'ye geçer ve her vuruş bir ok harcar."
         ]
       },
+            {
+        baslik: "Savaş üçgeni",
+        satirlar: [
+          "Her canavarın bir tipi vardır ve senin saldırı türüne farklı tepki verir.",
+          "Çevik canavarlar oka zayıf, yakın dövüşe dayanıklıdır.",
+          "Zırhlı canavarlar tam tersi: ok sekiyor, ağır darbe işliyor.",
+          "Canavar kartındaki yeşil ▲ avantajlı, kırmızı ▼ dezavantajlı olduğunu gösterir.",
+          "Bu yüzden yanında hem kılıç hem yay taşımak işine yarar."
+        ]
+      },
       {
         baslik: "Hayatta kalmak",
         satirlar: [
@@ -143,6 +205,31 @@ export let yardimlar = {
     ipuclari: [
       "Oyunu kapatsan bile savaş arka planda devam eder; döndüğünde ne olduğunun özetini görürsün.",
       "Okun veya yemeğin biterse offline savaş orada durur — gitmeden önce stok yap."
+    ]
+  },
+
+    achievements: {
+    ozet: "Oyun boyunca yaptıklarının karşılığı olan hedefler ve ödüller.",
+    bolumler: [
+      {
+        baslik: "Nasıl çalışır",
+        satirlar: [
+          "Başarımlar istatistik sayaçlarına bağlıdır — ayrıca uğraşman gerekmez.",
+          "Eşiği geçtiğin anda kendiliğinden açılır ve ödülü verilir.",
+          "Bir seri tamamlanınca bir sonraki basamak listede belirir."
+        ]
+      },
+      {
+        baslik: "Gizli başarımlar",
+        satirlar: [
+          "Bazı başarımlar açılana kadar '❓' olarak görünür.",
+          "Bunlar için özel bir şey yapman gerekmez, oynarken açılırlar."
+        ]
+      }
+    ],
+    ipuclari: [
+      "Ödüller çoğunlukla altındır — dükkânda işine yarar.",
+      "Sebat başarımları sadece oyunda kalmakla açılır."
     ]
   },
 
@@ -247,7 +334,8 @@ export let yardimlar = {
           "Malzeme gerektirmez, doğrudan üretir.",
           "Bazı aksiyonlarda şansa bağlı yan ürünler de düşer."
         ]
-      }
+      },
+
     ],
     ipuclari: [
       "Odun hem yakıt hem de zanaat malzemesidir; hiçbir zaman fazla gelmez.",
@@ -367,4 +455,23 @@ export let yardimlar = {
       "Yayla dövüşürken her vuruş ok harcar; uzun bir seansa çıkmadan önce bolca üret."
     ]
   }
+};
+
+
+// ============================================================
+// ORTAK BÖLÜMLER
+//
+// Ustalık her toplama/üretim yeteneğinde aynı şekilde çalışır.
+// Metni tek yerde tutup ilgili sayfalara otomatik ekliyoruz —
+// böylece yeni bir yetenek eklediğinde açıklamayı unutmuş olmuyorsun.
+// ============================================================
+
+export let ustalikBolumu = {
+  baslik: "⭐ Ustalık",
+  satirlar: [
+    "Her aksiyonun, yetenek seviyesinden ayrı bir ustalık seviyesi vardır.",
+    "Bir aksiyonu tekrar tekrar yaptıkça o işte ustalaşırsın.",
+    "Her 10 ustalık seviyesinde o aksiyon %5 hızlanır, en fazla %40.",
+    "Bu yüzden düşük seviyeli aksiyonlar da değerini korur."
+  ]
 };
