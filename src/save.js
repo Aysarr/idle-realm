@@ -6,7 +6,8 @@ import {
   oyuncuSaldiriHizi, oyuncuIsabetSansi, canavarIsabetSansi,
   okluSilahMi, slotAdedi, slotItemi, menzilliMi,
   kacKezYapilabilir, girdileriTuket, ciktilariVer, itemEkle,
-  aksiyonSuresi, ustalikXpVer, rastgeleMiktar, seviyeHesapla
+  aksiyonSuresi, ustalikXpVer, rastgeleMiktar, seviyeHesapla,
+  nisanDenemesiToplu
 } from "./core.js";
 
 // ============================================================
@@ -209,10 +210,22 @@ function offlineAksiyonHesapla(kayitZamani, kayitliAksiyonId) {
   xpVer(action.skillId, action.xp * adet);
   ustalikXpVer(action, adet);
 
+    let nisanTuru = action.girdiler ? "uretim" : "toplama";
+  let kazanilanNisan = nisanDenemesiToplu(nisanTuru, adet);
+
   ozetGoster(
     sureMetni(gecenSureMs),
     action.isim + " × " + adet + " tamamlandı.\n" +
     "+" + (action.xp * adet) + " XP"
+
+    
+  );
+
+    ozetGoster(
+    sureMetni(gecenSureMs),
+    action.isim + " × " + adet + " tamamlandı.\n" +
+    "+" + (action.xp * adet) + " XP" +
+    (kazanilanNisan > 0 ? "\n🎖️ " + kazanilanNisan + " Clan Nişanı" : "")
   );
 }
 
@@ -381,6 +394,12 @@ function offlineSavasHesapla(kayitZamani, monsterId) {
     }
   }
 
+  // Nişanları hesapla (özet için sakla)
+  let kazanilanNisan = 0;
+  if (oldurulen > 0) {
+    kazanilanNisan = nisanDenemesiToplu("savas", oldurulen);
+  }
+
   // XP'yi tek seferde ver (canlı savaştaki dağıtımın aynısı)
   if (oldurulen > 0) {
     let toplamXp = monster.xpOdulu * oldurulen;
@@ -413,6 +432,9 @@ function offlineSavasHesapla(kayitZamani, monsterId) {
   }
   if (yenenYemek > 0) {
     satirlar.push("🍤 " + yenenYemek + " yemek yendi");
+  }
+  if (kazanilanNisan > 0) {
+    satirlar.push("🎖️ " + kazanilanNisan + " Clan Nişanı");
   }
   if (olduMu) {
     satirlar.push("💀 Bir noktada öldün, savaş orada durdu.");

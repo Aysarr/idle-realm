@@ -32,6 +32,9 @@ export let state = {
     ustalikSeviyeAtlama: 0
   },
 
+  // Clan Nişanı - envanterde yer kaplamaz, ayrı sayaçta durur
+  clanNisani: 0,
+
     // --- CLAN ---
   // null ise oyuncu henüz clan kurmamış
   clan: null,
@@ -56,8 +59,6 @@ export let state = {
 
   // Oyuncu
   oyuncuHp: 30,
-  temelMaxHp: 30,
-  temelSaldiri: 5,
 
   // Hangi slotta hangi eşya takılı
   ekipman: {},
@@ -70,8 +71,8 @@ export let state = {
 
   // Ayarlar
   otomatikYemekAcik: false,
-    otomatikYemekEsigi: 50,
-      savasStili: "attack",
+  otomatikYemekEsigi: 50,
+  savasStili: "attack",
 
   // Aktif toplama/üretim aksiyonu
   aktifAksiyonId: null,
@@ -140,6 +141,7 @@ export const KAYDEDILECEK_ALANLAR = [
   "ustalikXp",
   "acilanBasarimlar",
   "clan",
+  "clanNisani",
 
   // Envanter
   "envanter",

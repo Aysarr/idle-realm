@@ -69,12 +69,28 @@ export let clanBonuslari = [
 // Bağışlanabilecek eşyaların puan değeri.
 // Satış fiyatının yerine ayrı bir değer kullanıyoruz ki
 // ekonomiyi bozmadan dengeleyebilelim.
-export function bagisPuani(item) {
-  if (item.bagisPuani !== undefined) {
-    return item.bagisPuani;
-  }
-  if (item.satisFiyati) {
-    return item.satisFiyati;
-  }
-  return 1;
-}
+// ============================================================
+// CLAN NİŞANI
+//
+// Clan seviyesi artık eşya bağışıyla değil, aktivite yaparken
+// düşen özel bir kaynakla yükseliyor.
+//
+// Neden: eşya bağışı iki sorun yaratıyordu — her yeni eşyanın
+// puanını elle dengelemek gerekiyordu, ve "bu kömürü üretimde
+// mi kullansam clana mı versem" gibi can sıkıcı bir seçim
+// doğuyordu. Nişan bu ikisini de ortadan kaldırıyor.
+//
+// Nişan envanterde yer kaplamaz, ayrı bir sayaçta birikir.
+// ============================================================
+
+export const NISAN_PUANI = 10;
+
+// Hangi aktiviteden hangi oranda düşer
+export const NISAN_SANSLARI = {
+  toplama: 0.01,   // %1  - bol ama seyrek
+  uretim: 0.02,    // %2  - emek daha çok
+  savas: 0.08      // %8  - en verimli
+};
+
+// Nadir bir loot düştüğünde ek şans
+export const NISAN_NADIR_BONUS = 0.25;

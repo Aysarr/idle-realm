@@ -84,6 +84,7 @@ button:hover {
 /* ---------- MENÜ ---------- */
 
 .menu-oge {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -247,6 +248,7 @@ button:hover {
 }
 
 .slot {
+  position: relative;
   aspect-ratio: 1;
   background: var(--panel);
   border: 1px solid var(--border);
@@ -432,11 +434,6 @@ button:hover {
   transition: width 0.3s;
 }
 
-/* Menüdeki ince XP çizgisi */
-.menu-oge {
-  position: relative;
-}
-
 .menu-xp {
   position: absolute;
   left: 10px;
@@ -545,12 +542,6 @@ body {
 .yetersiz {
   color: var(--hp-enemy);
 }
-/* ---------- YENİ: yığın slotlarındaki adet rozeti ---------- */
-
-.slot {
-  position: relative;
-}
-
 .slot-adet {
   position: absolute;
   top: 3px;
@@ -596,18 +587,6 @@ body {
   border-top: 1px solid var(--border);
   margin-top: 6px;
 }
-/* ---------- MENÜ GRUP BAŞLIKLARI ---------- */
-
-.menu-baslik {
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--text-dim);
-  padding: 12px 10px 5px 10px;
-  border-top: 1px solid var(--border);
-  margin-top: 6px;
-}
-
 /* ---------- SAVAŞ STİLİ SEÇİCİ ---------- */
 
 .stil-secici {
@@ -1187,4 +1166,30 @@ body {
 
 .bildirim.basarim .bildirim-icerik {
   color: var(--gold);
+}
+
+.nisan-karti {
+  background: var(--panel);
+  border: 1px solid var(--gold);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.nisan-ikon {
+  font-size: 2rem;
+}
+
+.nisan-adet {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.nisan-alt {
+  color: var(--text-dim);
+  font-size: 0.78rem;
 }

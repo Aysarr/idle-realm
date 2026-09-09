@@ -7,7 +7,10 @@ import { state } from "./state.js";
 import { bildirimGoster } from "./notify.js";
 import { bolgeler } from "./data/regions.js";
 import { canavarTipleri } from "./data/combatTypes.js";
-import { clanSeviyeIcinPuan, MAX_CLAN_SEVIYESI, clanBonuslari, bagisPuani } from "./data/clan.js";
+import {
+  clanSeviyeIcinPuan, MAX_CLAN_SEVIYESI, clanBonuslari,
+  NISAN_PUANI, NISAN_SANSLARI
+} from "./data/clan.js";
 import { basarimlar } from "./data/achievements.js";
 
 // ============================================================
@@ -518,11 +521,59 @@ export function clanSekmeBonusu() {
   return 0;
 }
 
+
+// Sekme siniri (clan bonusu dahil) - hem arayuz hem mantik bunu kullansin
+export function maxSekmeSayisi() {
+  return state.maxEnvanterSekmesi + clanSekmeBonusu();
+}
+
 export function clanAltinCarpani() {
   if (clanBonusuAcikMi("altin_1")) {
     return 1.1;
   }
   return 1;
+}
+
+// Bir aktivite sonrası nişan düşürme denemesi.
+// tur: "toplama" | "uretim" | "savas"
+export function nisanDenemesi(tur, ekSans) {
+  let sans = NISAN_SANSLARI[tur];
+  if (sans === undefined) {
+    return 0;
+  }
+
+  if (ekSans) {
+    sans = sans + ekSans;
+  }
+
+  if (Math.random() > sans) {
+    return 0;
+  }
+
+  state.clanNisani = state.clanNisani + 1;
+  return 1;
+}
+
+// Offline hesaplama için: n kez denemenin toplam sonucu
+export function nisanDenemesiToplu(tur, kere) {
+  let sans = NISAN_SANSLARI[tur];
+  if (sans === undefined || kere < 1) {
+    return 0;
+  }
+
+  let toplam = 0;
+  for (let i = 0; i < kere; i++) {
+    if (Math.random() <= sans) {
+      toplam = toplam + 1;
+    }
+  }
+
+  state.clanNisani = state.clanNisani + toplam;
+  return toplam;
+}
+
+export function nisanPuaniDegeri() {
+  return NISAN_PUANI;
 }
 
 // ---------- ENVANTER ----------
@@ -901,20 +952,30 @@ export function toplamMaxHp() {
   return 15 + skillSeviyesi("hitpoints") * 3;
 }
 
+// Savaş seviyesi = savunma temeli + saldırı tarzının en güçlüsü
+//
+// Yakın dövüş ile menzilliden hangisi yüksekse o sayılır.
+// Böylece uzmanlaşmak cezalandırılmaz: sadece yay kullanan biri,
+// hiç geliştirmediği Kuvvet yüzünden geride kalmaz.
 export function savasSeviyesi() {
-  let toplam =
-    skillSeviyesi("attack") +
-    skillSeviyesi("strength") +
-    skillSeviyesi("defence") +
-    skillSeviyesi("hitpoints") +
-    skillSeviyesi("ranged");
+  // Herkesin ihtiyacı olan temel: dayanıklılık
+  let temel = (skillSeviyesi("defence") + skillSeviyesi("hitpoints")) * 0.25;
 
-  let ortalama = Math.floor(toplam / 5);
+  // Yakın dövüş yolu
+  let yakinDovus = (skillSeviyesi("attack") + skillSeviyesi("strength")) * 0.325;
 
-  if (ortalama < 1) {
+  // Menzilli yolu (tek yetenek olduğu için katsayısı yüksek)
+  let menzilli = skillSeviyesi("ranged") * 0.65;
+
+  // Hangi yolda daha güçlüysen o sayılır
+  let saldiriGucu = Math.max(yakinDovus, menzilli);
+
+  let sonuc = Math.floor(temel + saldiriGucu);
+
+  if (sonuc < 1) {
     return 1;
   }
-  return ortalama;
+  return sonuc;
 }
 
 // ---------- ENVANTER SIRALAMA ----------

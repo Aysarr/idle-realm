@@ -193,6 +193,16 @@ export let yardimlar = {
           "Bu yüzden yanında hem kılıç hem yay taşımak işine yarar."
         ]
       },
+
+            {
+        baslik: "Savaş seviyesi",
+        satirlar: [
+          "Savunma ve Sağlık her zaman sayılır — dayanıklılık herkesin işine yarar.",
+          "Saldırı tarafında ise yakın dövüş ile menzilliden GÜÇLÜ OLANI sayılır.",
+          "Yani tek bir yolda uzmanlaşmak seni geride bırakmaz.",
+          "Bölge kilitleri savaş seviyesine bakar."
+        ]
+      },
       {
         baslik: "Hayatta kalmak",
         satirlar: [

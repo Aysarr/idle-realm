@@ -1,21 +1,22 @@
 import { dukkanUrunleri } from "./data/shop.js";
+import { NISAN_NADIR_BONUS } from "./data/clan.js";
 import { state, SAVAS_TIK_MS } from "./state.js";
 import {
   itemBul, monsterBul, actionBul,
   xpVer, envanterdekiMiktar, itemEkle, itemCikar,
-  toplamSaldiri, toplamMaxHp, gelenHasar,
+  toplamMaxHp, gelenHasar,
   oyuncuSaldiriHizi, oyuncuIsabetSansi, canavarIsabetSansi,
   aksiyonAcikMi, aksiyonSeviyeGerekli,
   girdilerYeterliMi, girdileriTuket, ciktilariVer, ciktilarSigarMi,
   okluSilahMi, menzilliMi, slotYiginMi, slotAdedi, slotItemi, slottanTuket,
   itemKusanilabilirMi, eksikGereksinimYazisi, rastgeleMiktar,
-  bolgeBul, bolgeAcikMi, ustalikXpVer, aksiyonSuresi,
-  canavaraHasar, tipCarpani, istatistikArtir,clanSeviyesi,
-  clanAltinCarpani
+  bolgeBul, bolgeAcikMi, aksiyonSuresi,
+  canavaraHasar, tipCarpani, istatistikArtir, clanSeviyesi,
+  clanAltinCarpani, nisanDenemesi, nisanPuaniDegeri, maxSekmeSayisi
 } from "./core.js";
 import { bildirimGoster } from "./notify.js";
 import { tumEkraniCiz, esikYazisiGuncelle } from "./ui.js";
-import { bagisPuani } from "./data/clan.js";
+
 
 // ============================================================
 // OYUN MANTIĞI
@@ -257,6 +258,14 @@ export function aksiyonBaslat(actionId) {
     savasDurdur();
   }
 
+      if (action.girdiler) {
+      istatistikArtir("uretilenEsya", 1);
+      nisanDenemesi("uretim");
+    } else {
+      istatistikArtir("toplananKaynak", 1);
+      nisanDenemesi("toplama");
+    }
+
   state.aktifAksiyonId = actionId;
   state.aksiyonBaslangicZamani = Date.now();
 
@@ -318,10 +327,13 @@ function savasKaydiEkle(mesaj) {
 
 function lootDus(monster) {
   istatistikArtir("oldurulenCanavar", 1);
+
+  // Nadir loot düşerse nişan şansı artar
+  let nadirDustuMu = false;
   let mesajParcalari = [];
 
   if (monster.altinOdulu) {
-        let altinMiktari = Math.round(monster.altinOdulu * clanAltinCarpani());
+    let altinMiktari = Math.round(monster.altinOdulu * clanAltinCarpani());
     state.altin = state.altin + altinMiktari;
     istatistikArtir("kazanilanAltin", altinMiktari);
     mesajParcalari.push("🪙 " + altinMiktari);
@@ -341,17 +353,29 @@ function lootDus(monster) {
       }
 
       // Envanter doluysa loot yere düşer
-            let miktar = rastgeleMiktar(loot);
+      let miktar = rastgeleMiktar(loot);
 
       if (itemEkle(loot.itemId, miktar) === false) {
         mesajParcalari.push("⚠️ " + item.isim + " (envanter dolu)");
         continue;
       }
 
+      // Nadir bir sey dustuyse nisan sansi artar
+      if (loot.sans <= 0.15) {
+        nadirDustuMu = true;
+      }
+
       mesajParcalari.push(
         item.ikon + " " + item.isim + (miktar > 1 ? " ×" + miktar : "")
       );
     }
+  }
+
+  let ekSans = nadirDustuMu ? NISAN_NADIR_BONUS : 0;
+  let nisan = nisanDenemesi("savas", ekSans);
+
+  if (nisan > 0) {
+    mesajParcalari.push("🎖️ Clan Nişanı");
   }
 
   savasKaydiEkle("💀 " + monster.isim + " öldü → " + mesajParcalari.join(", "));
@@ -629,11 +653,11 @@ export function envanterSekmesiAc(sekmeId) {
 }
 
 export function envanterSekmesiEkle() {
-  if (state.envanterSekmeleri.length >= state.maxEnvanterSekmesi + clanSekmeBonusu()) {
+  if (state.envanterSekmeleri.length >= maxSekmeSayisi()) {
     bildirimGoster(
       "<span class='bildirim-baslik'>Sekme sınırına ulaştın</span>" +
       "<span class='bildirim-icerik'>En fazla " +
-      (state.maxEnvanterSekmesi + clanSekmeBonusu()) + " sekme</span>",
+      (maxSekmeSayisi()) + " sekme</span>",
       "hata"
     );
     return;
@@ -970,33 +994,32 @@ export function clanDagit() {
   tumEkraniCiz();
 }
 
-// Bir eşyanın tamamını veya bir kısmını clana bağışlar
-export function clanaBagisla(itemId, adet) {
+// Biriken nişanları clana bağışlar
+export function nisanBagisla(adet) {
   if (state.clan === null) {
     return;
   }
 
-  let item = itemBul(itemId);
-  if (item === null) {
+  if (adet > state.clanNisani) {
+    adet = state.clanNisani;
+  }
+
+  if (adet < 1) {
+    bildirimGoster(
+      "<span class='bildirim-baslik'>Nişanın yok</span>" +
+      "<span class='bildirim-icerik'>Aktivite yaparak kazanırsın</span>",
+      "hata"
+    );
     return;
   }
 
-  let elimdeki = envanterdekiMiktar(itemId);
-  if (elimdeki < 1) {
-    return;
-  }
-
-  if (adet > elimdeki) {
-    adet = elimdeki;
-  }
-
-  let puan = bagisPuani(item) * adet;
-
+  let puan = adet * nisanPuaniDegeri();
   let eskiSeviye = clanSeviyesi();
-  itemCikar(itemId, adet);
+
+  state.clanNisani = state.clanNisani - adet;
   state.clan.puan = state.clan.puan + puan;
 
-  // Üyenin katkısını da kaydet (online'da sıralama için kullanılacak)
+  // Üyenin katkısını da kaydet (online'da sıralama için)
   for (let i = 0; i < state.clan.uyeler.length; i++) {
     if (state.clan.uyeler[i].oyuncuId === state.oyuncuId) {
       state.clan.uyeler[i].katki = state.clan.uyeler[i].katki + puan;
@@ -1015,8 +1038,7 @@ export function clanaBagisla(itemId, adet) {
   } else {
     bildirimGoster(
       "<span class='bildirim-baslik'>Bağışlandı</span>" +
-      "<span class='bildirim-icerik'>" + item.ikon + " ×" + adet +
-      " · +" + puan + " puan</span>"
+      "<span class='bildirim-icerik'>🎖️ ×" + adet + " · +" + puan + " puan</span>"
     );
   }
 

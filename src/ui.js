@@ -1,13 +1,12 @@
 import { skills, savasStilleri } from "./data/skills.js";
 import { items } from "./data/items.js";
 import { actions } from "./data/actions.js";
-import { monsters } from "./data/monsters.js";
 import { slotDuzeni } from "./data/slots.js";
 import { dukkanUrunleri } from "./data/shop.js";
 import { state, CAN_YENILENME_MS } from "./state.js";
 import { bolgeler } from "./data/regions.js";
 import { yardimlar, ustalikBolumu } from "./data/help.js";
-import { clanBonuslari, bagisPuani } from "./data/clan.js";
+import { clanBonuslari } from "./data/clan.js";
 import { basarimlar } from "./data/achievements.js";
 import {
   skillBul, itemBul, actionBul, slotBul,
@@ -24,7 +23,9 @@ import {
   ustalikBilgisi, ustalikHizBonusu, aksiyonSuresi, skillUstalikYuzdesi,
   canavarTipiBul, tipCarpani, canavaraHasar,
   clanVarMi, clanSeviyeBilgisi, clanSeviyesi, envanterKapasitesi,
-  clanHizBonusu, basarimAcikMi, basarimIlerlemesi, gosterilecekBasarimlar
+  clanHizBonusu, basarimAcikMi, basarimIlerlemesi, gosterilecekBasarimlar,
+  nisanPuaniDegeri,
+  maxSekmeSayisi
 } from "./core.js";
 
 // ============================================================
@@ -864,7 +865,7 @@ function envanterEkraniCiz() {
   }
 
     let sekmeEklenebilir =
-    state.envanterSekmeleri.length < state.maxEnvanterSekmesi;
+    state.envanterSekmeleri.length < maxSekmeSayisi();
 
   if (sekmeEklenebilir) {
     html = html +
@@ -880,7 +881,7 @@ function envanterEkraniCiz() {
 
   html = html +
     "<div class='sekme-sayaci'>Sekme: " + state.envanterSekmeleri.length +
-    " / " + state.maxEnvanterSekmesi + "</div>";
+    " / " + maxSekmeSayisi() + "</div>";
 
   // --- Sekme silme (Genel hariç) ---
   if (state.acikEnvanterSekmesi !== "genel") {
@@ -1172,41 +1173,34 @@ function clanEkraniCiz() {
       "</div>";
   }
 
-  // --- Bağış ---
+    // --- Bağış ---
   html = html + "<div class='baslik'>Bağış</div>";
 
-  let bagislanabilir = envanterSirali(null);
-  let bagisVarMi = false;
+  html = html +
+    "<div class='nisan-karti'>" +
+    "<div class='nisan-ikon'>🎖️</div>" +
+    "<div class='nisan-bilgi'>" +
+    "<div class='nisan-adet'>" + state.clanNisani.toLocaleString() + "</div>" +
+    "<div class='nisan-alt'>Clan Nişanı · tanesi " +
+    nisanPuaniDegeri() + " puan</div>" +
+    "</div>" +
+    "</div>";
 
-  for (let i = 0; i < bagislanabilir.length; i++) {
-    let kayit = bagislanabilir[i];
-    let puanBirim = bagisPuani(kayit.item);
-
-    // Kuşanılabilir eşyaları bağış listesinde göstermiyoruz -
-    // yanlışlıkla değerli ekipmanını vermesin
-    if (kayit.item.slot) {
-      continue;
-    }
-
-    bagisVarMi = true;
-
+  if (state.clanNisani > 0) {
     html = html +
       "<div class='kart'>" +
-      "<span class='aksiyon-bilgi'>" +
-      "<strong>" + kayit.item.ikon + " " + kayit.item.isim + "</strong>" +
-      "<span class='alt-bilgi'>Elinde " + kayit.miktar +
-      " · tanesi " + puanBirim + " puan</span>" +
-      "</span>" +
-      "<button onclick='clanaBagisla(\"" + kayit.item.id + "\", 1)'>1</button>" +
-      "<button onclick='clanaBagisla(\"" + kayit.item.id + "\", " +
-      kayit.miktar + ")'>Hepsi (+" + (puanBirim * kayit.miktar) + ")</button>" +
+      "<span class='aksiyon-bilgi'><strong>Nişanları bağışla</strong>" +
+      "<span class='alt-bilgi'>Tümü: +" +
+      (state.clanNisani * nisanPuaniDegeri()).toLocaleString() +
+      " clan puanı</span></span>" +
+      "<button onclick='nisanBagisla(" + state.clanNisani + ")'>Hepsini Ver</button>" +
       "</div>";
-  }
-
-  if (bagisVarMi === false) {
+  } else {
     html = html +
       "<div class='kart'><span class='alt-bilgi'>" +
-      "Bağışlanacak malzemen yok. Ekipmanlar bağışlanamaz.</span></div>";
+      "Henüz nişanın yok. Toplama, üretim ve savaş yaparken " +
+      "şansa bağlı olarak düşerler — savaşta daha sık." +
+      "</span></div>";
   }
 
   // --- Üyeler ---
