@@ -1,18 +1,19 @@
-import { items } from "./data/items.js";
 import { dukkanUrunleri } from "./data/shop.js";
-import { state, SAVAS_TUR_SURESI } from "./state.js";
+import { state, SAVAS_TIK_MS } from "./state.js";
 import {
-  skillBul, itemBul, monsterBul, actionBul,
+  itemBul, monsterBul, actionBul,
   xpVer, envanterdekiMiktar, itemEkle, itemCikar,
-  toplamSaldiri, toplamMaxHp
+  toplamSaldiri, toplamMaxHp, gelenHasar,
+  oyuncuSaldiriHizi, oyuncuIsabetSansi, canavarIsabetSansi,
+  aksiyonAcikMi, aksiyonSeviyeGerekli,
+  girdilerYeterliMi, girdileriTuket, ciktilariVer, ciktilarSigarMi,
+  okluSilahMi, menzilliMi, slotYiginMi, slotAdedi, slotItemi, slottanTuket
 } from "./core.js";
 import { bildirimGoster } from "./notify.js";
-import { tumEkraniCiz } from "./ui.js";
+import { tumEkraniCiz, esikYazisiGuncelle } from "./ui.js";
 
 // ============================================================
 // OYUN MANTIĞI
-// Oyuncunun yaptığı her şey (aksiyon başlatma, savaşma,
-// kuşanma, alışveriş) burada.
 // ============================================================
 
 // ---------- SEKME ----------
@@ -20,6 +21,27 @@ import { tumEkraniCiz } from "./ui.js";
 export function sekmeAc(sekmeId) {
   state.acikSekme = sekmeId;
   state.secilenSlot = null;
+
+  // Bu sayfayı ilk kez açıyorsa yardımı otomatik göster
+  let ilkKez = state.gorulenYardimlar.indexOf(sekmeId) === -1;
+
+  if (ilkKez) {
+    state.gorulenYardimlar.push(sekmeId);
+    state.yardimAcik = true;
+  } else {
+    state.yardimAcik = false;
+  }
+
+  tumEkraniCiz();
+}
+
+export function yardimDegistir() {
+  state.yardimAcik = !state.yardimAcik;
+  tumEkraniCiz();
+}
+
+export function savasStiliSec(stilId) {
+  state.savasStili = stilId;
   tumEkraniCiz();
 }
 
@@ -38,14 +60,38 @@ export function ekipmanKusan(itemId) {
     return;
   }
 
-  // O slotta zaten bir şey varsa envantere geri koy
-  let eskiItemId = state.ekipman[item.slot];
+  let slotId = item.slot;
+
+  // --- Yığın slotu (ok, yemek): elindekilerin HEPSİNİ tak ---
+  if (slotYiginMi(slotId)) {
+    let elimdeki = envanterdekiMiktar(itemId);
+    if (elimdeki < 1) {
+      return;
+    }
+
+    let eskiItemId = state.ekipman[slotId];
+    if (eskiItemId !== null && eskiItemId !== undefined && eskiItemId !== itemId) {
+      itemEkle(eskiItemId, slotAdedi(slotId));
+      state.ekipmanAdet[slotId] = 0;
+    }
+
+    itemCikar(itemId, elimdeki);
+    state.ekipman[slotId] = itemId;
+    state.ekipmanAdet[slotId] = slotAdedi(slotId) + elimdeki;
+    state.secilenSlot = null;
+
+    canSinirlaVeCiz();
+    return;
+  }
+
+  // --- Normal slot: tek parça ---
+  let eskiItemId = state.ekipman[slotId];
   if (eskiItemId !== null && eskiItemId !== undefined) {
     itemEkle(eskiItemId, 1);
   }
 
   itemCikar(itemId, 1);
-  state.ekipman[item.slot] = itemId;
+  state.ekipman[slotId] = itemId;
   state.secilenSlot = null;
 
   canSinirlaVeCiz();
@@ -57,7 +103,13 @@ export function ekipmanCikar(slotId) {
     return;
   }
 
-  itemEkle(takiliItemId, 1);
+  if (slotYiginMi(slotId)) {
+    itemEkle(takiliItemId, slotAdedi(slotId));
+    state.ekipmanAdet[slotId] = 0;
+  } else {
+    itemEkle(takiliItemId, 1);
+  }
+
   state.ekipman[slotId] = null;
   state.secilenSlot = null;
 
@@ -65,7 +117,6 @@ export function ekipmanCikar(slotId) {
 }
 
 export function slotTikla(slotId) {
-  // Doluysa çıkar, boşsa takılabilecekleri listele
   if (state.ekipman[slotId] !== null && state.ekipman[slotId] !== undefined) {
     ekipmanCikar(slotId);
     return;
@@ -82,13 +133,14 @@ export function slotTikla(slotId) {
 
 // ---------- YEMEK ----------
 
-export function yemekYe(itemId) {
-  if (envanterdekiMiktar(itemId) < 1) {
-    return;
-  }
-
-  let yemek = itemBul(itemId);
-  if (yemek === null || !yemek.iyilestirme) {
+export function yemekYe() {
+  let yemek = slotItemi("food");
+  if (yemek === null) {
+    bildirimGoster(
+      "<span class='bildirim-baslik'>Yemek slotu boş</span>" +
+      "<span class='bildirim-icerik'>Karakter ekranından yemek kuşan</span>",
+      "hata"
+    );
     return;
   }
 
@@ -96,7 +148,7 @@ export function yemekYe(itemId) {
     return;
   }
 
-  itemCikar(itemId, 1);
+  slottanTuket("food");
   state.oyuncuHp = state.oyuncuHp + yemek.iyilestirme;
 
   if (state.oyuncuHp > toplamMaxHp()) {
@@ -111,17 +163,35 @@ export function otomatikYemekDegistir() {
   tumEkraniCiz();
 }
 
-// Envanterdeki ilk yenebilir şeyi bulup yer
+export function otomatikYemekEsigiAyarla(yuzde) {
+  let sayi = parseInt(yuzde);
+
+  if (isNaN(sayi)) {
+    return;
+  }
+
+  if (sayi < 10) {
+    sayi = 10;
+  }
+  if (sayi > 90) {
+    sayi = 90;
+  }
+
+  state.otomatikYemekEsigi = sayi;
+  esikYazisiGuncelle();
+}
+
 function otomatikYemekDene() {
-  for (let i = 0; i < items.length; i++) {
-    let item = items[i];
-    if (!item.iyilestirme) {
-      continue;
-    }
-    if (envanterdekiMiktar(item.id) > 0) {
-      yemekYe(item.id);
-      return;
-    }
+  let yemek = slotItemi("food");
+  if (yemek === null) {
+    return;
+  }
+
+  slottanTuket("food");
+  state.oyuncuHp = state.oyuncuHp + yemek.iyilestirme;
+
+  if (state.oyuncuHp > toplamMaxHp()) {
+    state.oyuncuHp = toplamMaxHp();
   }
 }
 
@@ -133,15 +203,32 @@ export function aksiyonBaslat(actionId) {
     return;
   }
 
-  if (action.gerekliItemId) {
-    if (envanterdekiMiktar(action.gerekliItemId) < action.gerekliMiktar) {
-      bildirimGoster(
-        "<span class='bildirim-baslik'>Malzeme yok</span>" +
-        "<span class='bildirim-icerik'>" + action.isim + "</span>",
-        "hata"
-      );
-      return;
-    }
+  if (aksiyonAcikMi(action) === false) {
+    bildirimGoster(
+      "<span class='bildirim-baslik'>Kilitli</span>" +
+      "<span class='bildirim-icerik'>Seviye " +
+      aksiyonSeviyeGerekli(action) + " gerekli</span>",
+      "hata"
+    );
+    return;
+  }
+
+  if (girdilerYeterliMi(action) === false) {
+    bildirimGoster(
+      "<span class='bildirim-baslik'>Malzeme yok</span>" +
+      "<span class='bildirim-icerik'>" + action.isim + "</span>",
+      "hata"
+    );
+    return;
+  }
+
+  if (ciktilarSigarMi(action) === false) {
+    bildirimGoster(
+      "<span class='bildirim-baslik'>Envanter dolu</span>" +
+      "<span class='bildirim-icerik'>Yer açman gerekiyor</span>",
+      "hata"
+    );
+    return;
   }
 
   if (state.aktifZamanlayici !== null) {
@@ -157,16 +244,29 @@ export function aksiyonBaslat(actionId) {
   state.aksiyonBaslangicZamani = Date.now();
 
   state.aktifZamanlayici = setInterval(function () {
-    if (action.gerekliItemId) {
-      if (envanterdekiMiktar(action.gerekliItemId) < action.gerekliMiktar) {
-        aksiyonDurdur();
-        return;
-      }
-      itemCikar(action.gerekliItemId, action.gerekliMiktar);
+    if (girdilerYeterliMi(action) === false) {
+      bildirimGoster(
+        "<span class='bildirim-baslik'>Malzeme bitti</span>" +
+        "<span class='bildirim-icerik'>" + action.isim + " durdu</span>",
+        "hata"
+      );
+      aksiyonDurdur();
+      return;
     }
 
+    if (ciktilarSigarMi(action) === false) {
+      bildirimGoster(
+        "<span class='bildirim-baslik'>Envanter dolu</span>" +
+        "<span class='bildirim-icerik'>" + action.isim + " durdu</span>",
+        "hata"
+      );
+      aksiyonDurdur();
+      return;
+    }
+
+    girdileriTuket(action, 1);
+    ciktilariVer(action, 1);
     xpVer(action.skillId, action.xp);
-    itemEkle(action.itemId, 1);
 
     state.aksiyonBaslangicZamani = Date.now();
     tumEkraniCiz();
@@ -188,7 +288,7 @@ export function aksiyonDurdur() {
 
 function savasKaydiEkle(mesaj) {
   state.savasKayitlari.unshift(mesaj);
-  if (state.savasKayitlari.length > 6) {
+  if (state.savasKayitlari.length > 8) {
     state.savasKayitlari.pop();
   }
 }
@@ -214,12 +314,17 @@ function lootDus(monster) {
         continue;
       }
 
-      itemEkle(loot.itemId, 1);
+      // Envanter doluysa loot yere düşer
+      if (itemEkle(loot.itemId, 1) === false) {
+        mesajParcalari.push("⚠️ " + item.isim + " (envanter dolu)");
+        continue;
+      }
+
       mesajParcalari.push(item.ikon + " " + item.isim);
     }
   }
 
-  savasKaydiEkle(monster.isim + " öldü → " + mesajParcalari.join(", "));
+  savasKaydiEkle("💀 " + monster.isim + " öldü → " + mesajParcalari.join(", "));
 
   bildirimGoster(
     "<span class='bildirim-baslik'>" + monster.ikon + " " + monster.isim + " öldü</span>" +
@@ -227,12 +332,21 @@ function lootDus(monster) {
   );
 }
 
+function savasXpDagit(monster) {
+  if (menzilliMi()) {
+    xpVer("ranged", monster.xpOdulu);
+  } else {
+    xpVer(state.savasStili, monster.xpOdulu);
+  }
+
+  xpVer("hitpoints", Math.ceil(monster.xpOdulu / 3));
+}
+
 export function savasBaslat(monsterId) {
   if (state.aktifSavasZamanlayici !== null) {
     clearInterval(state.aktifSavasZamanlayici);
   }
 
-  // Aynı anda tek aktivite
   if (state.aktifZamanlayici !== null) {
     aksiyonDurdur();
   }
@@ -242,12 +356,26 @@ export function savasBaslat(monsterId) {
     return;
   }
 
+  if (okluSilahMi() && slotItemi("ammo") === null) {
+    bildirimGoster(
+      "<span class='bildirim-baslik'>Ok slotun boş</span>" +
+      "<span class='bildirim-icerik'>Yay ok olmadan çalışmaz</span>",
+      "hata"
+    );
+    return;
+  }
+
+  let simdi = Date.now();
+
   state.aktifSavasMonsterId = monsterId;
   state.aktifSavasMonsterHp = monster.maxHp;
-  state.oyuncuHp = toplamMaxHp();
-  state.savasTuruBaslangicZamani = Date.now();
+  state.siradakiOyuncuVurus = simdi + oyuncuSaldiriHizi();
+  state.siradakiCanavarVurus = simdi + monster.saldiriHiziMs;
+  state.savasKayitlari = [];
 
-  state.aktifSavasZamanlayici = setInterval(savasTuru, SAVAS_TUR_SURESI);
+  // Savaş küçük aralıklarla "tik" atar.
+  // İki taraf kendi hızına göre, birbirinden bağımsız vurur.
+  state.aktifSavasZamanlayici = setInterval(savasTiki, SAVAS_TIK_MS);
 
   tumEkraniCiz();
 }
@@ -258,50 +386,111 @@ export function savasDurdur() {
   }
   state.aktifSavasZamanlayici = null;
   state.aktifSavasMonsterId = null;
-  state.oyuncuHp = toplamMaxHp();
   tumEkraniCiz();
 }
 
-function savasTuru() {
+// Oyuncunun tek vuruşu. Canavar öldüyse true döner.
+function oyuncuVurusu(monster) {
+  // Yay kullanıyorsak ok harcanır (ıskalasak bile)
+  if (okluSilahMi()) {
+    if (slotItemi("ammo") === null) {
+      bildirimGoster(
+        "<span class='bildirim-baslik'>Okun bitti</span>" +
+        "<span class='bildirim-icerik'>Savaş durduruldu</span>",
+        "hata"
+      );
+      savasDurdur();
+      return false;
+    }
+    slottanTuket("ammo");
+  }
+
+  if (Math.random() > oyuncuIsabetSansi(monster)) {
+    savasKaydiEkle("😐 Iskaladın");
+    return false;
+  }
+
+  let hasar = toplamSaldiri();
+  state.aktifSavasMonsterHp = state.aktifSavasMonsterHp - hasar;
+  savasKaydiEkle("⚔️ " + monster.isim + "'a " + hasar + " hasar");
+
+  if (state.aktifSavasMonsterHp <= 0) {
+    savasXpDagit(monster);
+    lootDus(monster);
+    state.aktifSavasMonsterHp = monster.maxHp;
+    return true;
+  }
+
+  return false;
+}
+
+// Canavarın tek vuruşu. Oyuncu öldüyse true döner.
+function canavarVurusu(monster) {
+  if (Math.random() > canavarIsabetSansi(monster)) {
+    savasKaydiEkle("🛡️ " + monster.isim + " ıskaladı");
+    return false;
+  }
+
+  let hasar = gelenHasar(monster.saldiri);
+  state.oyuncuHp = state.oyuncuHp - hasar;
+  savasKaydiEkle("💥 " + monster.isim + " sana " + hasar + " hasar verdi");
+
+  let esikCan = toplamMaxHp() * (state.otomatikYemekEsigi / 100);
+  if (state.otomatikYemekAcik && state.oyuncuHp > 0 && state.oyuncuHp < esikCan) {
+    otomatikYemekDene();
+  }
+
+  if (state.oyuncuHp <= 0) {
+    state.oyuncuHp = 1;
+    bildirimGoster(
+      "<span class='bildirim-baslik'>Öldün</span>" +
+      "<span class='bildirim-icerik'>Canın 1'e düştü</span>",
+      "hata"
+    );
+    savasDurdur();
+    return true;
+  }
+
+  return false;
+}
+
+// Her tikte çalışır ama sadece sırası gelen taraf vurur.
+function savasTiki() {
   let monster = monsterBul(state.aktifSavasMonsterId);
   if (monster === null) {
     savasDurdur();
     return;
   }
 
-  state.savasTuruBaslangicZamani = Date.now();
+  let simdi = Date.now();
+  let birSeyOldu = false;
 
-  // Önce oyuncu vurur
-  state.aktifSavasMonsterHp = state.aktifSavasMonsterHp - toplamSaldiri();
+  // Oyuncunun sırası geldi mi?
+  if (simdi >= state.siradakiOyuncuVurus) {
+    state.siradakiOyuncuVurus = simdi + oyuncuSaldiriHizi();
+    oyuncuVurusu(monster);
+    birSeyOldu = true;
 
-  if (state.aktifSavasMonsterHp <= 0) {
-    xpVer("attack", monster.xpOdulu);
-    lootDus(monster);
-    state.aktifSavasMonsterHp = monster.maxHp;
+    // Savaş bu arada durduysa (ok bitti) devam etme
+    if (state.aktifSavasZamanlayici === null) {
+      return;
+    }
+  }
+
+  // Canavarın sırası geldi mi?
+  if (simdi >= state.siradakiCanavarVurus) {
+    state.siradakiCanavarVurus = simdi + monster.saldiriHiziMs;
+    let oyuncuOldu = canavarVurusu(monster);
+    birSeyOldu = true;
+
+    if (oyuncuOldu) {
+      return;
+    }
+  }
+
+  if (birSeyOldu) {
     tumEkraniCiz();
-    return;
   }
-
-  // Sonra canavar vurur
-  state.oyuncuHp = state.oyuncuHp - monster.saldiri;
-
-  if (state.otomatikYemekAcik && state.oyuncuHp > 0 &&
-      state.oyuncuHp < toplamMaxHp() / 2) {
-    otomatikYemekDene();
-  }
-
-  if (state.oyuncuHp <= 0) {
-    bildirimGoster(
-      "<span class='bildirim-baslik'>Öldün</span>" +
-      "<span class='bildirim-icerik'>Savaş sona erdi</span>",
-      "hata"
-    );
-    state.oyuncuHp = toplamMaxHp();
-    savasDurdur();
-    return;
-  }
-
-  tumEkraniCiz();
 }
 
 // ---------- DÜKKÂN ----------
@@ -327,8 +516,17 @@ export function satinAl(itemId) {
     return;
   }
 
+  // Envanterde yer yoksa satın alma
+  if (itemEkle(itemId, 1) === false) {
+    bildirimGoster(
+      "<span class='bildirim-baslik'>Envanter dolu</span>" +
+      "<span class='bildirim-icerik'>Önce yer aç</span>",
+      "hata"
+    );
+    return;
+  }
+
   state.altin = state.altin - urun.fiyat;
-  itemEkle(itemId, 1);
 
   let item = itemBul(itemId);
   bildirimGoster(
@@ -364,4 +562,244 @@ export function sat(itemId, adet) {
   );
 
   tumEkraniCiz();
+}
+
+// ---------- CAN YENİLENMESİ ----------
+
+export function canYenilenmeTuru() {
+  if (state.aktifSavasZamanlayici !== null) {
+    return;
+  }
+
+  if (state.oyuncuHp >= toplamMaxHp()) {
+    return;
+  }
+
+  state.oyuncuHp = state.oyuncuHp + 1;
+  tumEkraniCiz();
+}
+
+// ---------- ENVANTER SEKMELERİ ----------
+
+export function envanterSekmesiAc(sekmeId) {
+  state.acikEnvanterSekmesi = sekmeId;
+  tumEkraniCiz();
+}
+
+export function envanterSekmesiEkle() {
+  if (state.envanterSekmeleri.length >= state.maxEnvanterSekmesi) {
+    bildirimGoster(
+      "<span class='bildirim-baslik'>Sekme sınırına ulaştın</span>" +
+      "<span class='bildirim-icerik'>En fazla " +
+      state.maxEnvanterSekmesi + " sekme</span>",
+      "hata"
+    );
+    return;
+  }
+
+  let isim = prompt("Yeni sekmenin adı:");
+
+  if (isim === null || isim.trim() === "") {
+    return;
+  }
+
+  state.envanterSekmeleri.push({
+    id: "sekme_" + Date.now(),
+    isim: isim.trim(),
+    ikon: "📁"
+  });
+
+  tumEkraniCiz();
+}
+
+export function envanterSekmesiSil(sekmeId) {
+  if (sekmeId === "genel") {
+    return;
+  }
+
+  let onay = confirm("Bu sekme silinsin mi? İçindeki eşyalar Genel'e taşınır.");
+  if (onay === false) {
+    return;
+  }
+
+  // Eşyaları Genel'e taşı
+  for (let i = 0; i < state.envanter.length; i++) {
+    if (state.envanter[i].sekmeId === sekmeId) {
+      state.envanter[i].sekmeId = "genel";
+    }
+  }
+
+  // Sekmeyi listeden çıkar
+  let yeniListe = [];
+  for (let i = 0; i < state.envanterSekmeleri.length; i++) {
+    if (state.envanterSekmeleri[i].id !== sekmeId) {
+      yeniListe.push(state.envanterSekmeleri[i]);
+    }
+  }
+  state.envanterSekmeleri = yeniListe;
+
+  state.acikEnvanterSekmesi = "genel";
+  tumEkraniCiz();
+}
+
+export function itemSekmeDegistir(itemId, sekmeId) {
+  for (let i = 0; i < state.envanter.length; i++) {
+    if (state.envanter[i].itemId === itemId) {
+      state.envanter[i].sekmeId = sekmeId;
+      tumEkraniCiz();
+      return;
+    }
+  }
+}
+
+// ---------- SEKME İKONU (sürükle-bırak + dokunma) ----------
+
+// Bir sekmenin ikonunu, verilen eşyanın ikonu yapar
+function sekmeIkonuAyarla(sekmeId, itemId) {
+  let item = itemBul(itemId);
+  if (item === null) {
+    return;
+  }
+
+  for (let i = 0; i < state.envanterSekmeleri.length; i++) {
+    if (state.envanterSekmeleri[i].id === sekmeId) {
+      state.envanterSekmeleri[i].ikon = item.ikon;
+      break;
+    }
+  }
+
+  state.tasinanItemId = null;
+  tumEkraniCiz();
+}
+
+// --- Masaüstü: sürükleme ---
+
+export function ikonSurukleBasla(event, itemId) {
+  event.dataTransfer.setData("text/plain", itemId);
+  event.dataTransfer.effectAllowed = "copy";
+  state.tasinanItemId = itemId;
+  tumEkraniCiz();
+}
+
+export function ikonSurukleUzerinde(event) {
+  // Bunu engellememek gerekiyor, yoksa tarayıcı bırakmaya izin vermiyor
+  event.preventDefault();
+  event.dataTransfer.dropEffect = "copy";
+}
+
+export function ikonBirak(event, sekmeId) {
+  event.preventDefault();
+
+  let itemId = event.dataTransfer.getData("text/plain");
+  if (!itemId) {
+    itemId = state.tasinanItemId;
+  }
+
+  sekmeIkonuAyarla(sekmeId, itemId);
+}
+
+export function ikonSurukleBitti() {
+  state.tasinanItemId = null;
+  tumEkraniCiz();
+}
+
+// --- Dokunmatik: seç sonra dokun ---
+
+export function ikonIcinSec(itemId) {
+  if (state.tasinanItemId === itemId) {
+    state.tasinanItemId = null;
+  } else {
+    state.tasinanItemId = itemId;
+  }
+  tumEkraniCiz();
+}
+
+// Sekmeye tıklama: bir eşya seçiliyse ikonu değiştirir,
+// değilse normal sekme geçişi yapar
+export function sekmeTikla(sekmeId) {
+  if (state.tasinanItemId !== null) {
+    sekmeIkonuAyarla(sekmeId, state.tasinanItemId);
+    return;
+  }
+  envanterSekmesiAc(sekmeId);
+}
+
+// ---------- AYARLAR ----------
+
+export function oyunuSifirla() {
+  let onay = confirm(
+    "TÜM İLERLEMEN SİLİNECEK.\n\n" +
+    "Seviyelerin, eşyaların, altının — hepsi sıfırlanacak.\n" +
+    "Bu işlem geri alınamaz.\n\nEmin misin?"
+  );
+
+  if (onay === false) {
+    return;
+  }
+
+  localStorage.removeItem("idle-realm-kayit");
+
+  // Kapanış kaydı araya girip geri yazmasın diye dinleyiciyi kaldırıyoruz
+  window.onbeforeunload = null;
+  location.reload();
+}
+
+export function kaydiDisaAktar() {
+  let kayit = localStorage.getItem("idle-realm-kayit");
+
+  if (kayit === null) {
+    bildirimGoster(
+      "<span class='bildirim-baslik'>Kayıt yok</span>" +
+      "<span class='bildirim-icerik'>Önce biraz oyna</span>",
+      "hata"
+    );
+    return;
+  }
+
+  let alan = document.getElementById("yedek-alani");
+  if (alan !== null) {
+    alan.value = kayit;
+    alan.select();
+  }
+
+  bildirimGoster(
+    "<span class='bildirim-baslik'>Yedek hazır</span>" +
+    "<span class='bildirim-icerik'>Metni kopyala ve sakla</span>"
+  );
+}
+
+export function kaydiIceAktar() {
+  let alan = document.getElementById("yedek-alani");
+  if (alan === null || alan.value.trim() === "") {
+    bildirimGoster(
+      "<span class='bildirim-baslik'>Kutu boş</span>" +
+      "<span class='bildirim-icerik'>Yedek metnini yapıştır</span>",
+      "hata"
+    );
+    return;
+  }
+
+  // Metin geçerli bir kayıt mı? Bozuk veriyle oyunu bozmayalım.
+  try {
+    let test = JSON.parse(alan.value);
+    if (!test.skills) {
+      throw new Error("skills yok");
+    }
+  } catch (hata) {
+    bildirimGoster(
+      "<span class='bildirim-baslik'>Geçersiz yedek</span>" +
+      "<span class='bildirim-icerik'>Metin bozuk görünüyor</span>",
+      "hata"
+    );
+    return;
+  }
+
+  let onay = confirm("Mevcut ilerlemenin üzerine yazılacak. Emin misin?");
+  if (onay === false) {
+    return;
+  }
+
+  localStorage.setItem("idle-realm-kayit", alan.value);
+  window.onbeforeunload = null;
+  location.reload();
 }

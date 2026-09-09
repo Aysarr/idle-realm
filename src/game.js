@@ -1,22 +1,26 @@
-import { tumEkraniCiz, cubuklariGuncelle } from "./ui.js";
-import { oyunuKaydet, oyunuYukle } from "./save.js";
+import { anaMenuGoster, menuDevamEt, menuYeniOyun, menuYedektenYukle } from "./menu.js";
 import {
-  sekmeAc,
+  sekmeAc, yardimDegistir, savasStiliSec,
   aksiyonBaslat, aksiyonDurdur,
   savasBaslat, savasDurdur,
   slotTikla, ekipmanKusan, ekipmanCikar,
-  yemekYe, otomatikYemekDegistir,
-  satinAl, sat
+  yemekYe, otomatikYemekDegistir, otomatikYemekEsigiAyarla,
+  satinAl, sat,
+  envanterSekmesiAc, envanterSekmesiEkle, envanterSekmesiSil, itemSekmeDegistir,
+  sekmeTikla, ikonIcinSec, ikonSurukleBasla,
+  ikonSurukleUzerinde, ikonBirak, ikonSurukleBitti,
+  oyunuSifirla, kaydiDisaAktar, kaydiIceAktar
 } from "./gameplay.js";
 
 // ============================================================
 // GİRİŞ NOKTASI
-// Bu dosya oyunu KURAR ve BAŞLATIR, mantık içermez.
+// Butonları bağlar, sonra açılış menüsünü gösterir.
+// Oyun, menüden seçim yapılınca başlar (bkz. menu.js).
 // ============================================================
 
-// HTML içindeki onclick'lerin bu fonksiyonlara ulaşabilmesi için
-// onları window (tarayıcının genel alanı) üzerine koyuyoruz.
 window.sekmeAc = sekmeAc;
+window.yardimDegistir = yardimDegistir;
+window.savasStiliSec = savasStiliSec;
 window.aksiyonBaslat = aksiyonBaslat;
 window.aksiyonDurdur = aksiyonDurdur;
 window.savasBaslat = savasBaslat;
@@ -26,15 +30,25 @@ window.ekipmanKusan = ekipmanKusan;
 window.ekipmanCikar = ekipmanCikar;
 window.yemekYe = yemekYe;
 window.otomatikYemekDegistir = otomatikYemekDegistir;
+window.otomatikYemekEsigiAyarla = otomatikYemekEsigiAyarla;
 window.satinAl = satinAl;
 window.sat = sat;
+window.envanterSekmesiAc = envanterSekmesiAc;
+window.envanterSekmesiEkle = envanterSekmesiEkle;
+window.envanterSekmesiSil = envanterSekmesiSil;
+window.itemSekmeDegistir = itemSekmeDegistir;
+window.sekmeTikla = sekmeTikla;
+window.ikonIcinSec = ikonIcinSec;
+window.ikonSurukleBasla = ikonSurukleBasla;
+window.ikonSurukleUzerinde = ikonSurukleUzerinde;
+window.ikonBirak = ikonBirak;
+window.ikonSurukleBitti = ikonSurukleBitti;
+window.oyunuSifirla = oyunuSifirla;
+window.kaydiDisaAktar = kaydiDisaAktar;
+window.kaydiIceAktar = kaydiIceAktar;
 
-// Sekme kapanırken son bir kez kaydet
-window.addEventListener("beforeunload", oyunuKaydet);
+window.menuDevamEt = menuDevamEt;
+window.menuYeniOyun = menuYeniOyun;
+window.menuYedektenYukle = menuYedektenYukle;
 
-// Sırayla: kaydı yükle, ekranı çiz, döngüleri başlat
-oyunuYukle();
-tumEkraniCiz();
-
-setInterval(oyunuKaydet, 5000);
-setInterval(cubuklariGuncelle, 50);
+anaMenuGoster();
