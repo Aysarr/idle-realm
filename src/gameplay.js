@@ -13,6 +13,7 @@ import {
   canavaraHasar, tipCarpani, istatistikArtir,clanSeviyesi,
   clanAltinCarpani, nisanDenemesi, nisanPuaniDegeri,
   aletYeterliMi, skillAletTuru, aletKademesi, aletKademeBilgisi, aletTuruBul, skillSeviyesi,
+  ustalikXpCarpani
 } from "./core.js";
 import { bildirimGoster } from "./notify.js";
 import { tumEkraniCiz, esikYazisiGuncelle } from "./ui.js";
@@ -304,7 +305,7 @@ export function aksiyonBaslat(actionId) {
 
     girdileriTuket(action, 1);
     ciktilariVer(action, 1);
-    xpVer(action.skillId, action.xp);
+    xpVer(action.skillId, Math.round(action.xp * ustalikXpCarpani(action.id)));
     
         if (action.girdiler) {
       istatistikArtir("uretilenEsya", 1);

@@ -492,5 +492,14 @@ export let ustalikBolumu = {
     "Bir aksiyonu tekrar tekrar yaptıkça o işte ustalaşırsın.",
     "Her 10 ustalık seviyesinde o aksiyon %5 hızlanır, en fazla %40.",
     "Bu yüzden düşük seviyeli aksiyonlar da değerini korur."
+  ],
+
+    satirlar: [
+    "Her aksiyonun, yetenek seviyesinden ayrı bir ustalık seviyesi vardır.",
+    "Belirli eşiklerde kalıcı bonuslar açılır — sadece o aksiyon için:",
+    "Sv 10 ve 40 ve 80: aksiyon hızlanır (toplam %25'e kadar)",
+    "Sv 25 ve 60: çift ürün şansı (toplam %12)",
+    "Sv 99: o aksiyondan %25 ekstra XP",
+    "Bu yüzden düşük seviyeli aksiyonlar da değerini korur."
   ]
 };

@@ -1193,3 +1193,9 @@ body {
   color: var(--text-dim);
   font-size: 0.78rem;
 }
+
+.ustalik-hedef {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+}

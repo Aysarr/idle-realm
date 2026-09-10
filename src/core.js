@@ -13,6 +13,7 @@ import {
 } from "./data/clan.js";
 import { basarimlar } from "./data/achievements.js";
 import { aletTurleri, aletKademeleri } from "./data/tools.js";
+import { ustalikTaslari, MAX_HIZ_INDIRIMI } from "./data/mastery.js";
 
 // ============================================================
 // ÇEKİRDEK HESAPLAMALAR
@@ -246,23 +247,70 @@ export function ustalikBilgisi(actionId) {
 
 // Ustalık seviyesine göre süre indirimi (0 ile 0.40 arası)
 // Her 10 seviyede %5, en fazla %40
+// Bir aksiyonun ustalığından gelen toplam hız indirimi
 export function ustalikHizBonusu(actionId) {
   let seviye = ustalikSeviyesi(actionId);
-  let bonus = Math.floor(seviye / 10) * 0.05;
+  let toplam = 0;
 
-  if (bonus > 0.4) {
-    bonus = 0.4;
+  for (let i = 0; i < ustalikTaslari.length; i++) {
+    let tas = ustalikTaslari[i];
+    if (tas.tur === "hiz" && seviye >= tas.seviye) {
+      toplam = toplam + tas.deger;
+    }
   }
 
-  return bonus;
+  return toplam;
+}
+
+// Ustalıktan gelen çift ürün şansı
+export function ustalikCiftUrunBonusu(actionId) {
+  let seviye = ustalikSeviyesi(actionId);
+  let toplam = 0;
+
+  for (let i = 0; i < ustalikTaslari.length; i++) {
+    let tas = ustalikTaslari[i];
+    if (tas.tur === "ciftUrun" && seviye >= tas.seviye) {
+      toplam = toplam + tas.deger;
+    }
+  }
+
+  return toplam;
+}
+
+// Ustalıktan gelen XP çarpanı
+export function ustalikXpCarpani(actionId) {
+  let seviye = ustalikSeviyesi(actionId);
+  let carpan = 1;
+
+  for (let i = 0; i < ustalikTaslari.length; i++) {
+    let tas = ustalikTaslari[i];
+    if (tas.tur === "xp" && seviye >= tas.seviye) {
+      carpan = carpan + tas.deger;
+    }
+  }
+
+  return carpan;
+}
+
+// Bir sonraki kilometre taşı (arayüzde göstermek için)
+export function sonrakiUstalikTasi(actionId) {
+  let seviye = ustalikSeviyesi(actionId);
+
+  for (let i = 0; i < ustalikTaslari.length; i++) {
+    if (ustalikTaslari[i].seviye > seviye) {
+      return ustalikTaslari[i];
+    }
+  }
+
+  return null;
 }
 
 // Bir aksiyonun ustalık bonusu uygulanmış GERÇEK süresi
 export function aksiyonSuresi(action) {
   let indirim = ustalikHizBonusu(action.id) + clanHizBonusu();
 
-  if (indirim > 0.6) {
-    indirim = 0.6;
+  if (indirim > MAX_HIZ_INDIRIMI) {
+    indirim = MAX_HIZ_INDIRIMI;
   }
 
   return Math.round(action.sureMs * (1 - indirim));
@@ -717,12 +765,14 @@ export function aletYeterliMi(action) {
 
 // Bu aksiyonda çift ürün şansı ne? (aletten gelir)
 export function ciftUrunSansi(action) {
+  let toplam = ustalikCiftUrunBonusu(action.id);
+
   let alet = skillAletTuru(action.skillId);
-  if (alet === null) {
-    return 0;
+  if (alet !== null) {
+    toplam = toplam + aletKademeBilgisi(aletKademesi(alet.id)).ciftUrunSansi;
   }
 
-  return aletKademeBilgisi(aletKademesi(alet.id)).ciftUrunSansi;
+  return toplam;
 }
 
 // ---------- EŞYA SEVİYE ŞARTI ----------
@@ -973,10 +1023,10 @@ export function isabetPuani() {
   let ekipmanBonus = ekipmanBonusToplami("isabetBonusu");
 
   if (menzilliMi()) {
-    return 10 + skillSeviyesi("ranged") * 3 + ekipmanBonus;
+    return 10 + skillSeviyesi("ranged") * 2 + ekipmanBonus;
   }
 
-  return 10 + skillSeviyesi("attack") * 3 + ekipmanBonus;
+  return 10 + skillSeviyesi("attack") * 2 + ekipmanBonus;
 }
 
 // KUVVET (veya Menzilli) = hasar
@@ -984,15 +1034,18 @@ export function toplamSaldiri() {
   let ekipmanBonus = ekipmanBonusToplami("saldiriBonusu");
 
   if (menzilliMi()) {
-    return Math.floor(2 + skillSeviyesi("ranged") * 1.2 + ekipmanBonus);
+    // Menzilli tek yetenekle hem isabet hem hasar verdiği için
+    // hasar katsayısı biraz düşük — ayrıca ok maliyeti var
+    return Math.floor((5 + ekipmanBonus) * (1 + skillSeviyesi("ranged") * 0.042));
   }
 
-  return Math.floor(2 + skillSeviyesi("strength") * 2 + ekipmanBonus);
+  return Math.floor((5 + ekipmanBonus) * (1 + skillSeviyesi("strength") * 0.05));
 }
 
 // SAVUNMA = kaçınma puanı
 export function kacinmaPuani() {
-  return 8 + skillSeviyesi("defence") * 2 + ekipmanBonusToplami("savunmaBonusu");
+  return Math.floor(8 + skillSeviyesi("defence") * 1.2 +
+    ekipmanBonusToplami("savunmaBonusu"));
 }
 
 // Zırh ayrıca gelen hasarı biraz azaltır

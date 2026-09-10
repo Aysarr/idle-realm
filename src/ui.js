@@ -26,7 +26,8 @@ import {
   clanVarMi, clanSeviyeBilgisi, clanSeviyesi, envanterKapasitesi,
   clanHizBonusu, basarimAcikMi, basarimIlerlemesi, gosterilecekBasarimlar,
   nisanPuaniDegeri,aletKademesi, aletKademeBilgisi,
-  maxSekmeSayisi, skillAletTuru, aletYeterliMi, ciftUrunSansi
+  maxSekmeSayisi, skillAletTuru, aletYeterliMi, ciftUrunSansi,
+  sonrakiUstalikTasi
 } from "./core.js";
 
 // ============================================================
@@ -414,7 +415,8 @@ function skillEkraniCiz(acikSkill) {
       "<div class='ilerleme'><div class='ilerleme-dolu mor' style='width:" +
       ustalikYuzde + "%'></div></div>" +
       "<div class='xp-alt'>Her aksiyonun ayrı ustalığı var. " +
-      "Ustalık arttıkça o aksiyon hızlanır (her 10 seviyede %5, en fazla %40).</div>" +
+      "Sv 10/40/80'de hızlanır, 25/60'ta çift ürün şansı, " +
+      "99'da %25 ekstra XP.</div>" +
       "</div>";
   }
 
@@ -526,6 +528,7 @@ function skillEkraniCiz(acikSkill) {
     }
 
     let ustalik = ustalikBilgisi(action.id);
+    let sonrakiTas = sonrakiUstalikTasi(action.id);
     let ustalikBonusu = ustalikHizBonusu(action.id);
     let clanBonusu = clanHizBonusu();
     let hizBonusu = ustalikBonusu + clanBonusu;
@@ -554,9 +557,13 @@ function skillEkraniCiz(acikSkill) {
       girdiYazisi +
       sansliYazisi +
       "<span class='ustalik-satiri'>" +
-      "<span class='ustalik-etiket'>⭐ Ustalık " + ustalik.seviye + "</span>" +
+      "<span class='ustalik-etiket'>⭐ " + ustalik.seviye + "</span>" +
       "<span class='ustalik-cubuk'><span class='ustalik-dolu' style='width:" +
       ustalik.yuzde + "%'></span></span>" +
+      (sonrakiTas !== null
+        ? "<span class='ustalik-hedef' title='" + sonrakiTas.aciklama + "'>→ " +
+          sonrakiTas.seviye + ": " + sonrakiTas.isim + "</span>"
+        : "<span class='ustalik-hedef yeterli'>✦ Efsane</span>") +
       "</span>" +
       "</span>" +
       "<button onclick='" +

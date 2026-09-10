@@ -6,13 +6,17 @@
 // saldiriHiziMs : kaç milisaniyede bir vurduğu
 // tipId         : savaş üçgeni tipi (agile / armored / beast)
 //
-// TASARIM NOTU: Her bölgede farklı tipler ve farklı hızlar olmalı.
+// TASARIM NOTU: Her bölgede farklı tipler ve farklı hızlar var.
 // Hepsi aynı tipse oyuncu tek silah kuşanıp mekaniği unutur.
+//
+// DENGE HEDEFİ: Bölgenin hedef ekipman kademesindeki bir oyuncu
+// için öldürme süresi 4-30sn, dayanma süresi öldürmenin en az
+// 1.2 katı (boss) ile 30 katı (giriş canavarı) arasında.
 // ============================================================
 
 export let monsters = [
   // ================================================================
-  // KÖY ÇEVRESİ
+  // KÖY ÇEVRESİ — hedef: Sv 1-10, bronz ekipman
   // ================================================================
   {
     id: "rat",
@@ -20,10 +24,10 @@ export let monsters = [
     ikon: "🐀",
     bolgeId: "village",
     tipId: "agile",
-    maxHp: 20,
-    saldiri: 3,
-    isabet: 8,
-    kacinma: 6,
+    maxHp: 12,
+    saldiri: 2,
+    isabet: 5,
+    kacinma: 5,
     saldiriHiziMs: 1800,
     xpOdulu: 8,
     altinOdulu: 3,
@@ -39,11 +43,11 @@ export let monsters = [
     ikon: "👹",
     bolgeId: "village",
     tipId: "armored",
-    maxHp: 45,
-    saldiri: 7,
-    isabet: 14,
-    kacinma: 12,
-    saldiriHiziMs: 2800,
+    maxHp: 26,
+    saldiri: 4,
+    isabet: 9,
+    kacinma: 10,
+    saldiriHiziMs: 2600,
     xpOdulu: 18,
     altinOdulu: 9,
     lootTablosu: [
@@ -55,7 +59,7 @@ export let monsters = [
   },
 
   // ================================================================
-  // KARANLIK ORMAN
+  // KARANLIK ORMAN — hedef: Sv 12-22, demir ekipman
   // ================================================================
   {
     id: "wolf",
@@ -63,11 +67,11 @@ export let monsters = [
     ikon: "🐺",
     bolgeId: "forest",
     tipId: "beast",
-    maxHp: 60,
-    saldiri: 9,
-    isabet: 22,
-    kacinma: 20,
-    saldiriHiziMs: 1600,
+    maxHp: 70,
+    saldiri: 8,
+    isabet: 20,
+    kacinma: 22,
+    saldiriHiziMs: 1800,
     xpOdulu: 30,
     altinOdulu: 14,
     lootTablosu: [
@@ -81,11 +85,11 @@ export let monsters = [
     ikon: "🥷",
     bolgeId: "forest",
     tipId: "agile",
-    maxHp: 90,
-    saldiri: 13,
-    isabet: 30,
-    kacinma: 26,
-    saldiriHiziMs: 3000,
+    maxHp: 105,
+    saldiri: 12,
+    isabet: 26,
+    kacinma: 30,
+    saldiriHiziMs: 2800,
     xpOdulu: 48,
     altinOdulu: 30,
     lootTablosu: [
@@ -97,9 +101,13 @@ export let monsters = [
   },
 
   // ================================================================
-  // TERK EDİLMİŞ MADEN
-  // Demir set giyen oyuncu için tasarlandı.
-  // Dört farklı ritim: hızlı-zayıf, yavaş-sert, dengeli, çevik-güçlü.
+  // TERK EDİLMİŞ MADEN — hedef: Sv 25-40, çelik ekipman
+  //
+  // Dört farklı ritim:
+  //   Örümcek : hızlı, çok kaçıyor, isabet gerektirir
+  //   Golem   : yavaş ama çok canlı ve sert, kılıç işine yarar
+  //   Trol    : dengeli, zayıflığı yok
+  //   Madenci : bölgenin en zoru — yemek olmadan girme
   // ================================================================
   {
     id: "cave_spider",
@@ -107,11 +115,11 @@ export let monsters = [
     ikon: "🕷️",
     bolgeId: "mine",
     tipId: "agile",
-    maxHp: 110,
-    saldiri: 15,
+    maxHp: 190,
+    saldiri: 17,
     isabet: 42,
-    kacinma: 46,
-    saldiriHiziMs: 1400,
+    kacinma: 62,
+    saldiriHiziMs: 1600,
     xpOdulu: 70,
     altinOdulu: 22,
     lootTablosu: [
@@ -126,11 +134,11 @@ export let monsters = [
     ikon: "🗿",
     bolgeId: "mine",
     tipId: "armored",
-    maxHp: 230,
-    saldiri: 27,
+    maxHp: 330,
+    saldiri: 28,
     isabet: 46,
-    kacinma: 20,
-    saldiriHiziMs: 3600,
+    kacinma: 30,
+    saldiriHiziMs: 3400,
     xpOdulu: 105,
     altinOdulu: 38,
     lootTablosu: [
@@ -145,10 +153,10 @@ export let monsters = [
     ikon: "👺",
     bolgeId: "mine",
     tipId: "beast",
-    maxHp: 175,
-    saldiri: 21,
-    isabet: 56,
-    kacinma: 36,
+    maxHp: 260,
+    saldiri: 22,
+    isabet: 52,
+    kacinma: 48,
     saldiriHiziMs: 2600,
     xpOdulu: 95,
     altinOdulu: 34,
@@ -165,10 +173,10 @@ export let monsters = [
     ikon: "⛏️",
     bolgeId: "mine",
     tipId: "agile",
-    maxHp: 200,
+    maxHp: 300,
     saldiri: 25,
-    isabet: 70,
-    kacinma: 58,
+    isabet: 64,
+    kacinma: 76,
     saldiriHiziMs: 2200,
     xpOdulu: 130,
     altinOdulu: 55,

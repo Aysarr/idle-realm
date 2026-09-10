@@ -7,7 +7,7 @@ import {
   okluSilahMi, slotAdedi, slotItemi, menzilliMi,
   kacKezYapilabilir, girdileriTuket, ciktilariVer, itemEkle,
   aksiyonSuresi, ustalikXpVer, rastgeleMiktar, seviyeHesapla,
-  nisanDenemesiToplu
+  nisanDenemesiToplu, ustalikXpCarpani
 } from "./core.js";
 
 // ============================================================
@@ -207,7 +207,7 @@ function offlineAksiyonHesapla(kayitZamani, kayitliAksiyonId) {
 
   girdileriTuket(action, adet);
   ciktilariVer(action, adet);
-  xpVer(action.skillId, action.xp * adet);
+  xpVer(action.skillId, Math.round(action.xp * ustalikXpCarpani(action.id) * adet));
   ustalikXpVer(action, adet);
 
     let nisanTuru = action.girdiler ? "uretim" : "toplama";
