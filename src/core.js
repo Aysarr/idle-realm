@@ -8,12 +8,13 @@ import { bildirimGoster } from "./notify.js";
 import { bolgeler } from "./data/regions.js";
 import { canavarTipleri } from "./data/combatTypes.js";
 import {
-  clanSeviyeIcinPuan, MAX_CLAN_SEVIYESI, clanBonuslari,
-  NISAN_PUANI, NISAN_SANSLARI
+  clanSeviyeIcinPuan, MAX_CLAN_SEVIYESI, clanDallari,
+  depoKapasitesi, NISAN_PUANI, NISAN_SANSLARI
 } from "./data/clan.js";
 import { basarimlar } from "./data/achievements.js";
 import { aletTurleri, aletKademeleri } from "./data/tools.js";
 import { ustalikTaslari, MAX_HIZ_INDIRIMI } from "./data/mastery.js";
+import { dukkanYukseltmeleri } from "./data/shopUpgrades.js";
 
 // ============================================================
 // ÇEKİRDEK HESAPLAMALAR
@@ -307,17 +308,17 @@ export function sonrakiUstalikTasi(actionId) {
 
 // Bir aksiyonun ustalık bonusu uygulanmış GERÇEK süresi
 export function aksiyonSuresi(action) {
-  let indirim = ustalikHizBonusu(action.id) + clanHizBonusu();
-
+  let indirim = ustalikHizBonusu(action.id) + clanHizBonusu() + bonusDegeri("hiz");
+ 
   if (indirim > MAX_HIZ_INDIRIMI) {
     indirim = MAX_HIZ_INDIRIMI;
   }
-
+ 
   return Math.round(action.sureMs * (1 - indirim));
 }
 
 export function ustalikXpVer(action, kere) {
-  let kazanc = Math.ceil(action.xp * 0.5) * kere;
+  let kazanc = Math.ceil(action.xp * 0.5 * ustalikXpCarpaniDukkan()) * kere;
 
   let eskiSeviye = ustalikSeviyesi(action.id);
   state.ustalikXp[action.id] = ustalikXpi(action.id) + kazanc;
@@ -359,7 +360,10 @@ export function xpVer(skillId, miktar) {
   if (skill === null) {
     return;
   }
-
+ 
+  // Geçici XP bonusu
+  miktar = Math.round(miktar * (1 + bonusDegeri("xp")));
+ 
   let eskiSeviye = seviyeHesapla(skill.xp);
   skill.xp = skill.xp + miktar;
   let yeniSeviye = seviyeHesapla(skill.xp);
@@ -502,13 +506,7 @@ export function clanSeviyeBilgisi() {
   let seviye = clanSeviyesi();
 
   if (seviye >= MAX_CLAN_SEVIYESI) {
-    return {
-      seviye: seviye,
-      kazanilan: 0,
-      gereken: 0,
-      yuzde: 100,
-      maxMi: true
-    };
+    return { seviye: seviye, kazanilan: 0, gereken: 0, yuzde: 100, maxMi: true };
   }
 
   let basi = clanSeviyeIcinPuan(seviye);
@@ -523,65 +521,148 @@ export function clanSeviyeBilgisi() {
   };
 }
 
-// Bu bonus açık mı?
-export function clanBonusuAcikMi(bonusId) {
-  if (state.clan === null) {
-    return false;
-  }
+// ---------- YÜKSELTME AĞACI ----------
+//
+// Her clan seviyesi 1 yükseltme puanı verir. Bonuslar artık
+// otomatik gelmiyor — oyuncu nereye harcayacağını seçiyor.
 
-  let seviye = clanSeviyesi();
-
-  for (let i = 0; i < clanBonuslari.length; i++) {
-    if (clanBonuslari[i].id === bonusId) {
-      return seviye >= clanBonuslari[i].seviye;
+export function clanDaliBul(dalId) {
+  for (let i = 0; i < clanDallari.length; i++) {
+    if (clanDallari[i].id === dalId) {
+      return clanDallari[i];
     }
   }
-  return false;
+  return null;
 }
 
-// Toplama/üretim hız indirimi (0 - 0.08 arası)
-export function clanHizBonusu() {
-  if (clanBonusuAcikMi("toplama_hiz_3")) {
-    return 0.08;
+// Bir dalda kaçıncı kademedeyiz? (0 = hiç alınmamış)
+export function clanDalKademesi(dalId) {
+  if (state.clan === null || !state.clan.yukseltmeler) {
+    return 0;
   }
-  if (clanBonusuAcikMi("toplama_hiz_2")) {
-    return 0.05;
-  }
-  if (clanBonusuAcikMi("toplama_hiz_1")) {
-    return 0.03;
+  if (state.clan.yukseltmeler[dalId]) {
+    return state.clan.yukseltmeler[dalId];
   }
   return 0;
+}
+
+// O dalın şu anki bonus değeri (kademe alınmamışsa 0)
+export function clanDalDegeri(dalId) {
+  let dal = clanDaliBul(dalId);
+  let kademe = clanDalKademesi(dalId);
+
+  if (dal === null || kademe < 1) {
+    return 0;
+  }
+
+  return dal.kademeler[kademe - 1].deger;
+}
+
+export function clanToplamPuan() {
+  if (state.clan === null) {
+    return 0;
+  }
+  return clanSeviyesi() - 1;
+}
+
+export function clanHarcananPuan() {
+  let toplam = 0;
+
+  for (let i = 0; i < clanDallari.length; i++) {
+    let dal = clanDallari[i];
+    let kademe = clanDalKademesi(dal.id);
+
+    for (let k = 0; k < kademe; k++) {
+      toplam = toplam + dal.kademeler[k].maliyet;
+    }
+  }
+
+  return toplam;
+}
+
+export function clanKalanPuan() {
+  return clanToplamPuan() - clanHarcananPuan();
+}
+
+// ---------- YÜKSELTMELERDEN GELEN BONUSLAR ----------
+
+export function clanHizBonusu() {
+  return clanDalDegeri("atolye");
 }
 
 export function clanEnvanterBonusu() {
-  if (clanBonusuAcikMi("envanter_2")) {
-    return 10;
-  }
-  if (clanBonusuAcikMi("envanter_1")) {
-    return 5;
-  }
-  return 0;
+  return clanDalDegeri("ambar");
 }
 
 export function clanSekmeBonusu() {
-  if (clanBonusuAcikMi("envanter_2")) {
-    return 1;
-  }
-  return 0;
+  return clanDalDegeri("depo");
 }
 
 
-// Sekme siniri (clan bonusu dahil) - hem arayuz hem mantik bunu kullansin
+// Sekme sınırı (clan bonusu dahil) - hem arayüz hem mantık bunu kullanır
 export function maxSekmeSayisi() {
   return state.maxEnvanterSekmesi + clanSekmeBonusu();
 }
 
 export function clanAltinCarpani() {
-  if (clanBonusuAcikMi("altin_1")) {
-    return 1.1;
-  }
-  return 1;
+  return 1 + clanDalDegeri("pazar");
 }
+
+export function clanYemekCarpani() {
+  return 1 + clanDalDegeri("mutfak");
+}
+
+// ---------- CLAN DEPOSU ----------
+
+export function clanDepoKapasitesi() {
+  return depoKapasitesi(clanDalKademesi("depo"));
+}
+
+export function clanDepoKullanilan() {
+  if (state.clan === null || !state.clan.depo) {
+    return 0;
+  }
+
+  let sayi = 0;
+  for (let i = 0; i < state.clan.depo.length; i++) {
+    if (state.clan.depo[i].miktar > 0) {
+      sayi = sayi + 1;
+    }
+  }
+  return sayi;
+}
+
+export function depodakiMiktar(itemId) {
+  if (state.clan === null || !state.clan.depo) {
+    return 0;
+  }
+
+  for (let i = 0; i < state.clan.depo.length; i++) {
+    if (state.clan.depo[i].itemId === itemId) {
+      return state.clan.depo[i].miktar;
+    }
+  }
+  return 0;
+}
+
+// ---------- CLAN GÜNLÜĞÜ ----------
+
+export function clanGunlugeEkle(metin) {
+  if (state.clan === null) {
+    return;
+  }
+
+  if (!state.clan.gunluk) {
+    state.clan.gunluk = [];
+  }
+
+  state.clan.gunluk.unshift({ metin: metin, zaman: Date.now() });
+
+  if (state.clan.gunluk.length > 15) {
+    state.clan.gunluk.pop();
+  }
+}
+
 
 // Bir aktivite sonrası nişan düşürme denemesi.
 // tur: "toplama" | "uretim" | "savas"
@@ -648,7 +729,7 @@ export function envanterKullanilan() {
 }
 
 export function envanterKapasitesi() {
-  return state.envanterKapasitesi + clanEnvanterBonusu();
+  return state.envanterKapasitesi + clanEnvanterBonusu() + dukkanDegeri("canta");
 }
 
 export function envanterDoluMu() {
@@ -924,7 +1005,7 @@ export function ciktilariVer(action, kere) {
       let toplam = 0;
 
       for (let n = 0; n < kere; n++) {
-        if (Math.random() <= cikti.sans) {
+        if (Math.random() <= cikti.sans * sansCarpani()) {
           toplam = toplam + cikti.miktar;
         }
       }
@@ -1032,14 +1113,15 @@ export function isabetPuani() {
 // KUVVET (veya Menzilli) = hasar
 export function toplamSaldiri() {
   let ekipmanBonus = ekipmanBonusToplami("saldiriBonusu");
-
+  let carpan = 1 + bonusDegeri("hasar");
+ 
   if (menzilliMi()) {
-    // Menzilli tek yetenekle hem isabet hem hasar verdiği için
-    // hasar katsayısı biraz düşük — ayrıca ok maliyeti var
-    return Math.floor((5 + ekipmanBonus) * (1 + skillSeviyesi("ranged") * 0.042));
+    return Math.floor((5 + ekipmanBonus) *
+      (1 + skillSeviyesi("ranged") * 0.042) * carpan);
   }
-
-  return Math.floor((5 + ekipmanBonus) * (1 + skillSeviyesi("strength") * 0.05));
+ 
+  return Math.floor((5 + ekipmanBonus) *
+    (1 + skillSeviyesi("strength") * 0.05) * carpan);
 }
 
 // SAVUNMA = kaçınma puanı
@@ -1166,4 +1248,140 @@ export function envanterSirali(sekmeId) {
   });
 
   return liste;
+}
+
+// ============================================================
+// GEÇİCİ BONUSLAR (ziyafetlerden gelir)
+//
+// Her bonusun bir bitiş zamanı var. Süresi dolanlar okunurken
+// ayıklanıyor — ayrı bir temizleme zamanlayıcısına gerek yok.
+//
+// Aynı türden birden fazla bonus varsa TOPLANIR.
+// ============================================================
+ 
+export function bonuslariTemizle() {
+  let simdi = Date.now();
+  let kalan = [];
+ 
+  for (let i = 0; i < state.aktifBonuslar.length; i++) {
+    if (state.aktifBonuslar[i].bitis > simdi) {
+      kalan.push(state.aktifBonuslar[i]);
+    }
+  }
+ 
+  let degistiMi = kalan.length !== state.aktifBonuslar.length;
+  state.aktifBonuslar = kalan;
+  return degistiMi;
+}
+ 
+// Belirli türdeki aktif bonusların toplamı
+export function bonusDegeri(tur) {
+  let simdi = Date.now();
+  let toplam = 0;
+ 
+  for (let i = 0; i < state.aktifBonuslar.length; i++) {
+    let b = state.aktifBonuslar[i];
+    if (b.tur === tur && b.bitis > simdi) {
+      toplam = toplam + b.deger;
+    }
+  }
+ 
+  return toplam;
+}
+ 
+export function aktifBonusListesi() {
+  let simdi = Date.now();
+  let liste = [];
+ 
+  for (let i = 0; i < state.aktifBonuslar.length; i++) {
+    if (state.aktifBonuslar[i].bitis > simdi) {
+      liste.push(state.aktifBonuslar[i]);
+    }
+  }
+ 
+  return liste;
+}
+ 
+export function bonusEkle(tur, deger, sureMs, kaynak) {
+  state.aktifBonuslar.push({
+    tur: tur,
+    deger: deger,
+    bitis: Date.now() + sureMs,
+    kaynak: kaynak
+  });
+}
+ 
+// Bonus türlerinin okunabilir adları
+export function bonusAdi(tur) {
+  if (tur === "xp") return "XP";
+  if (tur === "hiz") return "Hız";
+  if (tur === "altin") return "Altın";
+  if (tur === "hasar") return "Hasar";
+  return tur;
+}
+ 
+export function bonusIkonu(tur) {
+  if (tur === "xp") return "📘";
+  if (tur === "hiz") return "⚡";
+  if (tur === "altin") return "🪙";
+  if (tur === "hasar") return "⚔️";
+  return "✨";
+}
+
+// DÜKKÂN YÜKSELTMELERİ
+//
+// Clan ağacıyla aynı kalıp: dal + kademe. Ama bunlar altınla
+// alınır ve farklı şeyler verir (üst üste binmesin diye).
+// ============================================================
+ 
+export function dukkanDaliBul(dalId) {
+  for (let i = 0; i < dukkanYukseltmeleri.length; i++) {
+    if (dukkanYukseltmeleri[i].id === dalId) {
+      return dukkanYukseltmeleri[i];
+    }
+  }
+  return null;
+}
+ 
+export function dukkanKademesi(dalId) {
+  if (state.dukkanYukseltmeleri[dalId]) {
+    return state.dukkanYukseltmeleri[dalId];
+  }
+  return 0;
+}
+ 
+// O dalın şu anki değeri (alınmamışsa 0)
+export function dukkanDegeri(dalId) {
+  let dal = dukkanDaliBul(dalId);
+  let kademe = dukkanKademesi(dalId);
+ 
+  if (dal === null || kademe < 1) {
+    return 0;
+  }
+ 
+  return dal.kademeler[kademe - 1].deger;
+}
+ 
+export function ustalikXpCarpaniDukkan() {
+  return 1 + dukkanDegeri("ustalikKitabi");
+}
+ 
+export function sansCarpani() {
+  return 1 + dukkanDegeri("sansTilsimi");
+}
+ 
+export function satisCarpani() {
+  return 1 + dukkanDegeri("tuccarLisansi");
+}
+ 
+export function okKorumaSansi() {
+  return dukkanDegeri("cephanelik");
+}
+ 
+export function canYenilenmeCarpani() {
+  let d = dukkanDegeri("sifaOcagi");
+  if (d < 1) {
+    return 1;
+  }
+  return d;
 }

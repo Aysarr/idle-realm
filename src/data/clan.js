@@ -1,96 +1,117 @@
 // ============================================================
 // CLAN SİSTEMİ VERİSİ
 //
-// Şu an tek kişilik çalışıyor (sen kendi clanını kurarsın).
-// Online'a geçildiğinde değişecek TEK şey, bu verinin nerede
-// saklandığı olacak — bonuslar, bağış mantığı, seviye eğrisi
-// aynen kalacak.
+// Şu an tek kişilik çalışıyor. Online'a geçildiğinde değişecek
+// TEK şey bu verinin nerede saklandığı olacak — yükseltmeler,
+// depo ve seviye eğrisi aynen kalacak.
 // ============================================================
 
-// Clan seviyesi için gereken toplam bağış puanı
+// ---------- SEVİYE ----------
+
+export const MAX_CLAN_SEVIYESI = 25;
+
 export function clanSeviyeIcinPuan(seviye) {
   if (seviye <= 1) {
     return 0;
   }
-  // Her seviye bir öncekinden %60 daha pahalı
-  return Math.floor(100 * (Math.pow(1.6, seviye - 1) - 1) / 0.6);
+  // Her seviye bir öncekinden %45 daha pahalı.
+  // Tek kişiyle son seviye ~2 ay; kalabalık bir clanda çok daha hızlı.
+  return Math.floor(200 * (Math.pow(1.45, seviye - 1) - 1) / 0.45);
 }
 
-export const MAX_CLAN_SEVIYESI = 25;
-
-// Clan seviyesine göre açılan bonuslar.
-// Bilinçli olarak MÜTEVAZI tutuldu: clansız oynayan biri
-// geri kalmamalı, sadece biraz yavaş ilerlemeli.
-export let clanBonuslari = [
-  {
-    seviye: 3,
-    id: "toplama_hiz_1",
-    isim: "Ortak Aletler",
-    aciklama: "Toplama ve üretim aksiyonları %3 hızlı",
-    ikon: "⚡"
-  },
-  {
-    seviye: 6,
-    id: "envanter_1",
-    isim: "Clan Ambarı",
-    aciklama: "+5 envanter kapasitesi",
-    ikon: "🎒"
-  },
-  {
-    seviye: 10,
-    id: "toplama_hiz_2",
-    isim: "Usta Aletler",
-    aciklama: "Toplama ve üretim aksiyonları %5 hızlı (toplam)",
-    ikon: "⚡"
-  },
-  {
-    seviye: 14,
-    id: "altin_1",
-    isim: "Tüccar Ağı",
-    aciklama: "Savaştan %10 daha çok altın",
-    ikon: "🪙"
-  },
-  {
-    seviye: 18,
-    id: "envanter_2",
-    isim: "Genişletilmiş Ambar",
-    aciklama: "+10 envanter kapasitesi (toplam), +1 sekme",
-    ikon: "🎒"
-  },
-  {
-    seviye: 22,
-    id: "toplama_hiz_3",
-    isim: "Clan Ustaları",
-    aciklama: "Toplama ve üretim aksiyonları %8 hızlı (toplam)",
-    ikon: "⚡"
-  }
-];
-
-// Bağışlanabilecek eşyaların puan değeri.
-// Satış fiyatının yerine ayrı bir değer kullanıyoruz ki
-// ekonomiyi bozmadan dengeleyebilelim.
-// ============================================================
-// CLAN NİŞANI
+// ---------- CLAN NİŞANI ----------
 //
-// Clan seviyesi artık eşya bağışıyla değil, aktivite yaparken
-// düşen özel bir kaynakla yükseliyor.
-//
-// Neden: eşya bağışı iki sorun yaratıyordu — her yeni eşyanın
-// puanını elle dengelemek gerekiyordu, ve "bu kömürü üretimde
-// mi kullansam clana mı versem" gibi can sıkıcı bir seçim
-// doğuyordu. Nişan bu ikisini de ortadan kaldırıyor.
-//
-// Nişan envanterde yer kaplamaz, ayrı bir sayaçta birikir.
-// ============================================================
+// Clan seviyesi eşya bağışıyla değil, aktivite yaparken düşen
+// özel bir kaynakla yükselir. Nişan envanterde yer kaplamaz.
 
 export const NISAN_PUANI = 10;
 
-// Hangi aktiviteden hangi oranda düşer
 export const NISAN_SANSLARI = {
   toplama: 0.01,   // %1  - bol ama seyrek
   uretim: 0.02,    // %2  - emek daha çok
   savas: 0.08      // %8  - en verimli
 };
 
-// Nadir bir loot düştüğünde ek şans
 export const NISAN_NADIR_BONUS = 0.25;
+
+// ---------- YÜKSELTME AĞACI ----------
+//
+// Her clan seviyesi 1 yükseltme puanı verir. Puanlar dallara
+// harcanır. Kademe maliyetleri arttığı için TÜM dalları
+// maksimuma çıkarmak mümkün değil — bu, gerçek bir seçim yaratır.
+//
+// Maksimum seviyede (25) toplam 24 puan kazanılır.
+// Tüm yükseltmelerin toplam maliyeti 27 puan.
+
+export let clanDallari = [
+  {
+    id: "ambar",
+    isim: "Ambar",
+    ikon: "🎒",
+    aciklama: "Envanter kapasiteni artırır",
+    kademeler: [
+      { maliyet: 1, deger: 5, metin: "+5 envanter kapasitesi" },
+      { maliyet: 2, deger: 10, metin: "+10 envanter kapasitesi" },
+      { maliyet: 3, deger: 18, metin: "+18 envanter kapasitesi" }
+    ]
+  },
+  {
+    id: "atolye",
+    isim: "Atölye",
+    ikon: "⚡",
+    aciklama: "Toplama ve üretim aksiyonlarını hızlandırır",
+    kademeler: [
+      { maliyet: 1, deger: 0.02, metin: "Aksiyonlar %2 hızlı" },
+      { maliyet: 2, deger: 0.05, metin: "Aksiyonlar %5 hızlı" },
+      { maliyet: 3, deger: 0.09, metin: "Aksiyonlar %9 hızlı" }
+    ]
+  },
+  {
+    id: "pazar",
+    isim: "Pazar",
+    ikon: "🪙",
+    aciklama: "Savaştan gelen altını artırır",
+    kademeler: [
+      { maliyet: 1, deger: 0.08, metin: "Savaş altını %8 fazla" },
+      { maliyet: 2, deger: 0.18, metin: "Savaş altını %18 fazla" },
+      { maliyet: 3, deger: 0.32, metin: "Savaş altını %32 fazla" }
+    ]
+  },
+  {
+    id: "mutfak",
+    isim: "Mutfak",
+    ikon: "🍳",
+    aciklama: "Yemeklerin daha çok can yeniler",
+    kademeler: [
+      { maliyet: 1, deger: 0.10, metin: "Yemekler %10 fazla iyileştirir" },
+      { maliyet: 2, deger: 0.22, metin: "Yemekler %22 fazla iyileştirir" },
+      { maliyet: 3, deger: 0.38, metin: "Yemekler %38 fazla iyileştirir" }
+    ]
+  },
+  {
+    id: "depo",
+    isim: "Depo",
+    ikon: "📦",
+    aciklama: "Clan deposunun kapasitesini ve sekme sayını artırır",
+    kademeler: [
+      { maliyet: 1, deger: 1, metin: "+10 depo yeri, +1 envanter sekmesi" },
+      { maliyet: 2, deger: 2, metin: "+25 depo yeri, +2 envanter sekmesi" }
+    ]
+  }
+];
+
+// ---------- DEPO ----------
+// Bağıştan farkı: depoya konan eşya KAYBOLMAZ, geri alınabilir.
+// Envanterin dolduğunda taşma alanı olarak işe yarar.
+
+export const TEMEL_DEPO_KAPASITESI = 10;
+
+export function depoKapasitesi(depoKademesi) {
+  if (depoKademesi >= 2) {
+    return TEMEL_DEPO_KAPASITESI + 25;
+  }
+  if (depoKademesi >= 1) {
+    return TEMEL_DEPO_KAPASITESI + 10;
+  }
+  return TEMEL_DEPO_KAPASITESI;
+}

@@ -11,8 +11,10 @@ import {
   ikonSurukleUzerinde, ikonBirak, ikonSurukleBitti,
   oyunuSifirla, kaydiDisaAktar, kaydiIceAktar,bolgeSec,
   oyuncuAdiDegistir,  clanKur, clanDagit, nisanBagisla, clanAmblemiDegistir,
-  aletYukselt
+  clanYukseltmeAl, depoyaKoy, depodanAl, depoyaKoySor, depodanAlSor,
+  aletYukselt, ziyafetYe, dukkanYukseltmeAl, satSor
 } from "./gameplay.js";
+import { bonuslariTemizle } from "./core.js";
 
 // ============================================================
 // GİRİŞ NOKTASI
@@ -54,10 +56,25 @@ window.clanKur = clanKur;
 window.clanDagit = clanDagit;
 window.nisanBagisla = nisanBagisla;
 window.clanAmblemiDegistir = clanAmblemiDegistir;
+window.clanYukseltmeAl = clanYukseltmeAl;
+window.depoyaKoy = depoyaKoy;
+window.depodanAl = depodanAl;
+window.depoyaKoySor = depoyaKoySor;
+window.depodanAlSor = depodanAlSor;
 window.aletYukselt = aletYukselt;
+window.ziyafetYe = ziyafetYe;
+window.dukkanYukseltmeAl = dukkanYukseltmeAl;
+window.satSor = satSor;
 
 window.menuDevamEt = menuDevamEt;
 window.menuYeniOyun = menuYeniOyun;
 window.menuYedektenYukle = menuYedektenYukle;
 
 anaMenuGoster();
+
+// Süresi dolan bonusları temizle ve ekranı tazele
+setInterval(function () {
+  if (bonuslariTemizle()) {
+    tumEkraniCiz();
+  }
+}, 2000);

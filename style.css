@@ -1199,3 +1199,71 @@ body {
   color: var(--text-dim);
   white-space: nowrap;
 }
+/* ---------- CLAN YUKSELTME AGACI ---------- */
+
+.puan-satiri {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  font-size: 0.88rem;
+}
+
+.puan-satiri strong {
+  color: var(--gold);
+  font-size: 1.05rem;
+}
+
+.kademe-noktalar {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.kademe-nokta {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: #0d0f14;
+}
+
+.kademe-nokta.dolu {
+  background: var(--gold);
+  border-color: var(--gold);
+}
+
+.log-zaman {
+  float: right;
+  opacity: 0.6;
+  font-size: 0.7rem;
+}
+
+.bonus-serit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+ 
+.bonus-rozet {
+  background: #1f2430;
+  border: 1px solid var(--accent);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+ 
+.bonus-sure {
+  color: var(--text-dim);
+  font-weight: 400;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}

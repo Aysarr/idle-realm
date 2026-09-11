@@ -20,6 +20,8 @@ export let state = {
 
     // Sahip olunan alet kademeleri (envanterde yer kaplamaz)
   aletler: { axe: 1, pickaxe: 1, rod: 1 },
+  // Dükkândan alınan kalıcı yükseltmeler
+  dukkanYukseltmeleri: {},
 
   // --- İSTATİSTİKLER ---
   // Clan katkısı ve başarımlar bunların üstüne kurulacak
@@ -38,6 +40,9 @@ export let state = {
 
   // Clan Nişanı - envanterde yer kaplamaz, ayrı sayaçta durur
   clanNisani: 0,
+
+  // Aktif geçici bonuslar: [{ tur, deger, bitis, kaynak }]
+  aktifBonuslar: [],
 
     // --- CLAN ---
   // null ise oyuncu henüz clan kurmamış
@@ -160,6 +165,7 @@ export const KAYDEDILECEK_ALANLAR = [
   "ekipman",
   "ekipmanAdet",
   "aletler",
+  "dukkanYukseltmeleri",
   
 
   // Ayarlar
@@ -167,6 +173,7 @@ export const KAYDEDILECEK_ALANLAR = [
   "otomatikYemekEsigi",
   "savasStili",
   "gorulenYardimlar",
+  "aktifBonuslar",
 
   // Devam eden aktivite
   "acikBolgeId",

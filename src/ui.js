@@ -6,9 +6,10 @@ import { dukkanUrunleri } from "./data/shop.js";
 import { state, CAN_YENILENME_MS } from "./state.js";
 import { bolgeler } from "./data/regions.js";
 import { yardimlar, ustalikBolumu } from "./data/help.js";
-import { clanBonuslari } from "./data/clan.js";
+import { clanDallari } from "./data/clan.js";
 import { basarimlar } from "./data/achievements.js";
 import { aletTurleri } from "./data/tools.js";
+import { dukkanYukseltmeleri } from "./data/shopUpgrades.js";
 import {
   skillBul, itemBul, actionBul, slotBul,
   seviyeHesapla, seviyeBilgisi, skillSeviyesi,
@@ -23,11 +24,14 @@ import {
   bolgeBul, bolgeAcikMi, bolgeninCanavarlari,
   ustalikBilgisi, ustalikHizBonusu, aksiyonSuresi, skillUstalikYuzdesi,
   canavarTipiBul, tipCarpani, canavaraHasar,
-  clanVarMi, clanSeviyeBilgisi, clanSeviyesi, envanterKapasitesi,
+  clanVarMi, clanSeviyeBilgisi, clanSeviyesi,
+  clanDalKademesi, clanKalanPuan, clanToplamPuan,
+  clanDepoKapasitesi, clanDepoKullanilan, envanterKapasitesi,
   clanHizBonusu, basarimAcikMi, basarimIlerlemesi, gosterilecekBasarimlar,
   nisanPuaniDegeri,aletKademesi, aletKademeBilgisi,
   maxSekmeSayisi, skillAletTuru, aletYeterliMi, ciftUrunSansi,
-  sonrakiUstalikTasi
+  sonrakiUstalikTasi, aktifBonusListesi, bonusAdi, bonusIkonu, bonusDegeri, bonuslariTemizle,
+  dukkanKademesi, satisCarpani,
 } from "./core.js";
 
 // ============================================================
@@ -829,6 +833,46 @@ function karakterEkraniCiz() {
       "</div>";
   }
 
+  // --- Ziyafetler ---
+  let ziyafetVarMi = false;
+  let ziyafetHtml = "";
+ 
+  for (let i = 0; i < items.length; i++) {
+    let item = items[i];
+ 
+    if (!item.bonus) {
+      continue;
+    }
+ 
+    let sahipOlunan = envanterdekiMiktar(item.id);
+    if (sahipOlunan < 1) {
+      continue;
+    }
+ 
+    ziyafetVarMi = true;
+ 
+    let etkiler = [];
+    for (let e = 0; e < item.bonus.etkiler.length; e++) {
+      let et = item.bonus.etkiler[e];
+      etkiler.push(bonusIkonu(et.tur) + " +%" +
+        Math.round(et.deger * 100) + " " + bonusAdi(et.tur));
+    }
+ 
+    ziyafetHtml = ziyafetHtml +
+      "<div class='kart'><span class='aksiyon-bilgi'>" +
+      "<strong>" + item.ikon + " " + item.isim + "</strong>" +
+      "<span class='alt-bilgi'>" + etkiler.join(" · ") + " · " +
+      Math.round(item.bonus.sureMs / 60000) + " dk · elinde: " +
+      sahipOlunan + "</span>" +
+      "<span class='alt-bilgi'>+" + item.iyilestirme + " can</span>" +
+      "</span>" +
+      "<button onclick='ziyafetYe(\"" + item.id + "\")'>Kullan</button></div>";
+  }
+ 
+  if (ziyafetVarMi) {
+    html = html + "<div class='baslik'>🍲 Ziyafetler</div>" + ziyafetHtml;
+  }
+
   html = html + "<div class='baslik'>Ekipman</div>" + ekipmanIzgarasiHtml();
 
   html = html + "<div class='baslik'>🍤 Yemek Ayarı</div>";
@@ -995,17 +1039,9 @@ function envanterEkraniCiz() {
 function dukkanEkraniCiz() {
   let html =
     sayfaBasligi("shop", "🏪 Dükkân") +
-    "<div class='altin-satiri'>🪙 Altının: <strong>" + state.altin + "</strong></div>" +
-    "<div class='baslik'>Satın Al</div>";
+    "<div class='altin-satiri'>🪙 Altının: <strong>" + state.altin + "</strong></div>";
 
-  for (let i = 0; i < dukkanUrunleri.length; i++) {
-    let urun = dukkanUrunleri[i];
-    let item = itemBul(urun.itemId);
-    if (item === null) {
-      continue;
-    }
-
-      // --- Aletler ---
+  // ---------- ALETLER ----------
   html = html + "<div class='baslik'>🔧 Aletler</div>";
 
   html = html +
@@ -1023,7 +1059,7 @@ function dukkanEkraniCiz() {
     let skill = skillBul(alet.skillId);
     let skillAdi = skill !== null ? skill.isim : "";
 
-    // En üst kademedeyse
+    // En üst kademedeyse yükseltme gösterme
     if (sonraki === null || sonraki.kademe === mevcutKademe) {
       html = html +
         "<div class='kart'>" +
@@ -1062,6 +1098,69 @@ function dukkanEkraniCiz() {
       "</div>";
   }
 
+  // ---------- KALICI YÜKSELTMELER ----------
+  html = html + "<div class='baslik'>⚙️ Kalıcı Yükseltmeler</div>";
+ 
+  html = html +
+    "<div class='kart'><span class='alt-bilgi'>" +
+    "Bir kez alınır, kalıcıdır. Clan yükseltmeleriyle çakışmaz — " +
+    "ikisi farklı şeyler verir." +
+    "</span></div>";
+ 
+  for (let i = 0; i < dukkanYukseltmeleri.length; i++) {
+    let dal = dukkanYukseltmeleri[i];
+    let kademe = dukkanKademesi(dal.id);
+    let sonMu = kademe >= dal.kademeler.length;
+ 
+    let noktalar = "";
+    for (let k = 0; k < dal.kademeler.length; k++) {
+      noktalar = noktalar +
+        "<span class='kademe-nokta" + (k < kademe ? " dolu" : "") + "'></span>";
+    }
+ 
+    let durum;
+    let buton = "";
+ 
+    if (sonMu) {
+      durum = "<span class='alt-bilgi yeterli'>⭐ " +
+        dal.kademeler[kademe - 1].metin + "</span>";
+    } else {
+      let sonraki = dal.kademeler[kademe];
+      durum =
+        (kademe > 0
+          ? "<span class='alt-bilgi yeterli'>Şu an: " +
+            dal.kademeler[kademe - 1].metin + "</span>"
+          : "") +
+        "<span class='alt-bilgi'>→ " + sonraki.metin + "</span>";
+ 
+      let alinabilir = state.altin >= sonraki.fiyat;
+      buton =
+        "<span class='deger'>🪙 " + sonraki.fiyat.toLocaleString() + "</span>" +
+        "<button onclick='dukkanYukseltmeAl(\"" + dal.id + "\")'" +
+        (alinabilir ? "" : " disabled") + ">Al</button>";
+    }
+ 
+    html = html +
+      "<div class='kart" + (sonMu ? " basarim-acik" : "") + "'>" +
+      "<span class='aksiyon-bilgi'>" +
+      "<strong>" + dal.ikon + " " + dal.isim +
+      " <span class='kademe-noktalar'>" + noktalar + "</span></strong>" +
+      "<span class='alt-bilgi'>" + dal.aciklama + "</span>" +
+      durum +
+      "</span>" + buton +
+      "</div>";
+  }
+
+  // ---------- SATIN AL ----------
+  html = html + "<div class='baslik'>Satın Al</div>";
+
+  for (let i = 0; i < dukkanUrunleri.length; i++) {
+    let urun = dukkanUrunleri[i];
+    let item = itemBul(urun.itemId);
+    if (item === null) {
+      continue;
+    }
+
     let alabilirMi = state.altin >= urun.fiyat;
 
     html = html +
@@ -1076,6 +1175,7 @@ function dukkanEkraniCiz() {
       "</div>";
   }
 
+  // ---------- SAT ----------
   html = html + "<div class='baslik'>Sat</div>";
 
   let satilabilirVarMi = false;
@@ -1097,11 +1197,18 @@ function dukkanEkraniCiz() {
       "<div class='kart'><span class='aksiyon-bilgi'>" +
       "<strong>" + item.ikon + " " + item.isim + "</strong>" +
       "<span class='alt-bilgi'>Adet: " + kayit.miktar +
-      " · tanesi 🪙 " + item.satisFiyati + "</span>" +
+      " · tanesi 🪙 " +
+      Math.round(item.satisFiyati * satisCarpani()) + "</span>" +
       "</span>" +
-      "<button onclick='sat(\"" + kayit.itemId + "\", 1)'>Sat 1</button>" +
+      "<button onclick='sat(\"" + kayit.itemId + "\", 1)'>1</button>" +
+      (kayit.miktar >= 10
+        ? "<button onclick='sat(\"" + kayit.itemId + "\", 10)'>10</button>"
+        : "") +
+      "<button onclick='satSor(\"" + kayit.itemId + "\")'>Miktar…</button>" +
       "<button onclick='sat(\"" + kayit.itemId + "\", " + kayit.miktar + ")'>" +
-      "Hepsi (🪙 " + (item.satisFiyati * kayit.miktar) + ")</button>" +
+      "Hepsi (🪙 " +
+      Math.round(item.satisFiyati * kayit.miktar * satisCarpani()).toLocaleString() +
+      ")</button>" +
       "</div>";
   }
 
@@ -1196,6 +1303,15 @@ function istatistikEkraniCiz() {
 
 // ---------- CLAN EKRANI ----------
 
+function clanZamanMetni(ms) {
+  let dk = Math.floor((Date.now() - ms) / 60000);
+  if (dk < 1) return "az önce";
+  if (dk < 60) return dk + " dk önce";
+  let saat = Math.floor(dk / 60);
+  if (saat < 24) return saat + " saat önce";
+  return Math.floor(saat / 24) + " gün önce";
+}
+
 function clanEkraniCiz() {
   let html = sayfaBasligi("clan", "🛡️ Clan");
 
@@ -1205,24 +1321,24 @@ function clanEkraniCiz() {
       "<div class='kart'>" +
       "<span class='aksiyon-bilgi'>" +
       "<strong>Henüz bir clanın yok</strong>" +
-      "<span class='alt-bilgi'>Clan kurup kaynak bağışlayarak clan seviyeni " +
-      "yükseltebilirsin. Clan seviyesi tüm üyelere kalıcı bonuslar verir.</span>" +
+      "<span class='alt-bilgi'>Aktivite yaparken düşen Clan Nişanlarını " +
+      "bağışlayarak clan seviyeni yükseltir, kazandığın puanlarla " +
+      "kalıcı yükseltmeler açarsın.</span>" +
       "</span>" +
       "<button onclick='clanKur()'>Clan Kur</button>" +
       "</div>";
 
-    // Neler kazanacağını göster - motivasyon
-    html = html + "<div class='baslik'>Clan Bonusları</div>";
+    html = html + "<div class='baslik'>Yükseltme Dalları</div>";
 
-    for (let i = 0; i < clanBonuslari.length; i++) {
-      let bonus = clanBonuslari[i];
+    for (let i = 0; i < clanDallari.length; i++) {
+      let dal = clanDallari[i];
       html = html +
         "<div class='kart kilitli'>" +
         "<span class='aksiyon-bilgi'>" +
-        "<strong>" + bonus.ikon + " " + bonus.isim + "</strong>" +
-        "<span class='alt-bilgi'>" + bonus.aciklama + "</span>" +
+        "<strong>" + dal.ikon + " " + dal.isim + "</strong>" +
+        "<span class='alt-bilgi'>" + dal.aciklama + "</span>" +
         "</span>" +
-        "<span class='deger'>Sv " + bonus.seviye + "</span>" +
+        "<span class='deger'>" + dal.kademeler.length + " kademe</span>" +
         "</div>";
     }
 
@@ -1230,57 +1346,38 @@ function clanEkraniCiz() {
     return;
   }
 
-  // --- Clan varsa ana panel ---
   let clan = state.clan;
   let bilgi = clanSeviyeBilgisi();
 
+  // --- Başlık kartı ---
   html = html +
     "<div class='clan-karti'>" +
     "<div class='clan-amblem'>" + clan.amblem + "</div>" +
     "<div class='clan-bilgi'>" +
     "<div class='clan-ad'>" + clan.isim + "</div>" +
     "<div class='clan-alt'>Seviye " + bilgi.seviye + " · " +
-    clan.uyeler.length + " üye · " +
-    clan.puan.toLocaleString() + " puan</div>" +
+    clan.uyeler.length + " üye · kuruluş " +
+    clanZamanMetni(clan.kurulusTarihi) + "</div>" +
     "</div>" +
     "</div>";
 
-  // Seviye çubuğu
+  // --- Seviye çubuğu ---
   html = html +
     "<div class='xp-panel'>" +
     "<div class='xp-ust'>" +
     "<span class='xp-seviye'>Clan Seviyesi " + bilgi.seviye + "</span>" +
     "<span class='xp-detay'>" +
-    (bilgi.maxMi
-      ? "MAX"
-      : bilgi.kazanilan.toLocaleString() + " / " +
-        bilgi.gereken.toLocaleString()) +
+    (bilgi.maxMi ? "MAX" :
+      bilgi.kazanilan.toLocaleString() + " / " + bilgi.gereken.toLocaleString()) +
     "</span></div>" +
     "<div class='ilerleme'><div class='ilerleme-dolu altin' style='width:" +
     bilgi.yuzde + "%'></div></div>" +
-    "<div class='xp-alt'>Kaynak bağışlayarak clan seviyesini yükselt. " +
-    "Her seviye tüm üyelere fayda sağlar.</div>" +
+    "<div class='xp-alt'>Toplam " + clan.puan.toLocaleString() +
+    " puan bağışlandı · her seviye 1 yükseltme puanı verir</div>" +
     "</div>";
 
-  // --- Bonuslar ---
-  html = html + "<div class='baslik'>Bonuslar</div>";
-
-  for (let i = 0; i < clanBonuslari.length; i++) {
-    let bonus = clanBonuslari[i];
-    let acikMi = bilgi.seviye >= bonus.seviye;
-
-    html = html +
-      "<div class='kart" + (acikMi ? "" : " kilitli") + "'>" +
-      "<span class='aksiyon-bilgi'>" +
-      "<strong>" + (acikMi ? bonus.ikon : "🔒") + " " + bonus.isim + "</strong>" +
-      "<span class='alt-bilgi'>" + bonus.aciklama + "</span>" +
-      "</span>" +
-      "<span class='deger'>" + (acikMi ? "AÇIK" : "Sv " + bonus.seviye) + "</span>" +
-      "</div>";
-  }
-
-    // --- Bağış ---
-  html = html + "<div class='baslik'>Bağış</div>";
+  // --- Bağış ---
+  html = html + "<div class='baslik'>🎖️ Bağış</div>";
 
   html = html +
     "<div class='nisan-karti'>" +
@@ -1290,27 +1387,142 @@ function clanEkraniCiz() {
     "<div class='nisan-alt'>Clan Nişanı · tanesi " +
     nisanPuaniDegeri() + " puan</div>" +
     "</div>" +
+    (state.clanNisani > 0
+      ? "<button onclick='nisanBagisla(" + state.clanNisani + ")'>Hepsini Ver</button>"
+      : "") +
     "</div>";
 
-  if (state.clanNisani > 0) {
-    html = html +
-      "<div class='kart'>" +
-      "<span class='aksiyon-bilgi'><strong>Nişanları bağışla</strong>" +
-      "<span class='alt-bilgi'>Tümü: +" +
-      (state.clanNisani * nisanPuaniDegeri()).toLocaleString() +
-      " clan puanı</span></span>" +
-      "<button onclick='nisanBagisla(" + state.clanNisani + ")'>Hepsini Ver</button>" +
-      "</div>";
-  } else {
+  if (state.clanNisani < 1) {
     html = html +
       "<div class='kart'><span class='alt-bilgi'>" +
-      "Henüz nişanın yok. Toplama, üretim ve savaş yaparken " +
-      "şansa bağlı olarak düşerler — savaşta daha sık." +
+      "Nişanlar toplama, üretim ve savaş yaparken şansa bağlı düşer — " +
+      "savaşta daha sık." +
       "</span></div>";
   }
 
+  // --- Yükseltme ağacı ---
+  let kalan = clanKalanPuan();
+
+  html = html +
+    "<div class='baslik'>⚙️ Yükseltmeler</div>" +
+    "<div class='puan-satiri'>Harcanabilir puan: <strong>" + kalan +
+    "</strong> / " + clanToplamPuan() + "</div>";
+
+  for (let i = 0; i < clanDallari.length; i++) {
+    let dal = clanDallari[i];
+    let kademe = clanDalKademesi(dal.id);
+    let sonMu = kademe >= dal.kademeler.length;
+
+    // Kademe göstergesi (dolu/boş noktalar)
+    let noktalar = "";
+    for (let k = 0; k < dal.kademeler.length; k++) {
+      noktalar = noktalar +
+        "<span class='kademe-nokta" + (k < kademe ? " dolu" : "") + "'></span>";
+    }
+
+    let durumYazisi;
+    let buton = "";
+
+    if (sonMu) {
+      durumYazisi = "<span class='alt-bilgi yeterli'>⭐ " +
+        dal.kademeler[kademe - 1].metin + "</span>";
+    } else {
+      let sonraki = dal.kademeler[kademe];
+      durumYazisi =
+        (kademe > 0
+          ? "<span class='alt-bilgi yeterli'>Şu an: " +
+            dal.kademeler[kademe - 1].metin + "</span>"
+          : "") +
+        "<span class='alt-bilgi'>→ " + sonraki.metin + "</span>";
+
+      let alinabilir = kalan >= sonraki.maliyet;
+      buton =
+        "<span class='deger'>" + sonraki.maliyet + " puan</span>" +
+        "<button onclick='clanYukseltmeAl(\"" + dal.id + "\")'" +
+        (alinabilir ? "" : " disabled") + ">Al</button>";
+    }
+
+    html = html +
+      "<div class='kart" + (sonMu ? " basarim-acik" : "") + "'>" +
+      "<span class='aksiyon-bilgi'>" +
+      "<strong>" + dal.ikon + " " + dal.isim +
+      " <span class='kademe-noktalar'>" + noktalar + "</span></strong>" +
+      "<span class='alt-bilgi'>" + dal.aciklama + "</span>" +
+      durumYazisi +
+      "</span>" + buton +
+      "</div>";
+  }
+
+  // --- Clan deposu ---
+  let depoKullanilan = clanDepoKullanilan();
+  let depoKap = clanDepoKapasitesi();
+
+  html = html +
+    "<div class='baslik'>📦 Clan Deposu</div>" +
+    "<div class='kart'><span class='alt-bilgi'>" +
+    "Depoya koyduğun eşyalar kaybolmaz, istediğin zaman geri alırsın. " +
+    "Envanterin dolduğunda taşma alanı olarak kullanabilirsin." +
+    "</span><span class='deger'>" + depoKullanilan + " / " + depoKap + "</span></div>";
+
+  if (clan.depo && clan.depo.length > 0) {
+    for (let i = 0; i < clan.depo.length; i++) {
+      let kayit = clan.depo[i];
+      if (kayit.miktar < 1) {
+        continue;
+      }
+
+      let item = itemBul(kayit.itemId);
+      if (item === null) {
+        continue;
+      }
+
+      html = html +
+        "<div class='kart'>" +
+        "<span class='aksiyon-bilgi'>" +
+        "<strong>" + item.ikon + " " + item.isim + "</strong>" +
+        "<span class='alt-bilgi'>Depoda: " + kayit.miktar + "</span>" +
+        "</span>" +
+        "<button onclick='depodanAl(\"" + kayit.itemId + "\", 1)'>1</button>" +
+        (kayit.miktar >= 10
+          ? "<button onclick='depodanAl(\"" + kayit.itemId + "\", 10)'>10</button>"
+          : "") +
+        "<button onclick='depodanAlSor(\"" + kayit.itemId + "\")'>Miktar…</button>" +
+        "<button onclick='depodanAl(\"" + kayit.itemId + "\", " +
+        kayit.miktar + ")'>Hepsi</button>" +
+        "</div>";
+    }
+  } else {
+    html = html +
+      "<div class='kart'><span class='alt-bilgi'>Depo boş.</span></div>";
+  }
+
+  // Envanterden depoya koyma
+  let envListe = envanterSirali(null);
+  if (envListe.length > 0) {
+    html = html + "<div class='baslik'>Depoya Koy</div>";
+
+    for (let i = 0; i < envListe.length; i++) {
+      let kayit = envListe[i];
+
+      html = html +
+        "<div class='kart'>" +
+        "<span class='aksiyon-bilgi'>" +
+        "<strong>" + kayit.item.ikon + " " + kayit.item.isim + "</strong>" +
+        "<span class='alt-bilgi'>Envanterde: " + kayit.miktar + "</span>" +
+        "</span>" +
+        "<button onclick='depoyaKoy(\"" + kayit.item.id + "\", 1)'>1</button>" +
+        (kayit.miktar >= 10
+          ? "<button onclick='depoyaKoy(\"" + kayit.item.id + "\", 10)'>10</button>"
+          : "") +
+        "<button onclick='depoyaKoySor(\"" + kayit.item.id + "\")'>Miktar…</button>" +
+        "<button onclick='depoyaKoy(\"" + kayit.item.id + "\", " +
+        kayit.miktar + ")'>Hepsi</button>" +
+        "</div>";
+    }
+  }
+
   // --- Üyeler ---
-  html = html + "<div class='baslik'>Üyeler</div>";
+  html = html + "<div class='baslik'>👥 Üyeler</div>";
 
   for (let i = 0; i < clan.uyeler.length; i++) {
     let uye = clan.uyeler[i];
@@ -1328,11 +1540,26 @@ function clanEkraniCiz() {
 
   html = html +
     "<div class='kart'><span class='alt-bilgi'>" +
-    "🌐 Çevrimiçi özellikler henüz hazır değil. Şimdilik clan sadece senin. " +
-    "Sunucu geldiğinde arkadaşların katılabilecek ve birlikte bağış yapabileceksiniz." +
+    "🌐 Çevrimiçi özellikler henüz hazır değil. Sunucu geldiğinde " +
+    "arkadaşların katılabilecek ve birlikte bağış yapabileceksiniz." +
     "</span></div>";
 
-  // --- Amblem seçimi ---
+  // --- Günlük ---
+  if (clan.gunluk && clan.gunluk.length > 0) {
+    html = html + "<div class='baslik'>📜 Clan Günlüğü</div><div class='savas-log'>";
+
+    for (let i = 0; i < clan.gunluk.length; i++) {
+      let kayit = clan.gunluk[i];
+      html = html +
+        "<div class='log-satir'>" + kayit.metin +
+        "<span class='log-zaman'>" + clanZamanMetni(kayit.zaman) + "</span>" +
+        "</div>";
+    }
+
+    html = html + "</div>";
+  }
+
+  // --- Amblem ---
   html = html + "<div class='baslik'>Amblem</div><div class='amblem-secici'>";
 
   let amblemler = ["🛡️", "⚔️", "🐺", "🔥", "🌲", "⭐", "🐉", "👑", "🦅", "⚡"];
@@ -1351,13 +1578,14 @@ function clanEkraniCiz() {
   html = html +
     "<div class='kart tehlike'>" +
     "<span class='aksiyon-bilgi'><strong>Clanı Dağıt</strong>" +
-    "<span class='alt-bilgi'>Tüm bağışlar ve clan seviyesi silinir. " +
+    "<span class='alt-bilgi'>Seviye, yükseltmeler ve depodaki eşyalar silinir. " +
     "Geri alınamaz.</span></span>" +
     "<button onclick='clanDagit()'>Dağıt</button>" +
     "</div>";
 
   icerikAlani.innerHTML = html;
 }
+
 
 // ---------- BAŞARIM EKRANI ----------
 
@@ -1529,9 +1757,43 @@ function icerikCiz() {
   }
 }
 
+// Aktif bonusları gösteren şerit. Bonus yoksa hiç çizilmez.
+function bonusSeridiHtml() {
+  let liste = aktifBonusListesi();
+ 
+  if (liste.length === 0) {
+    return "";
+  }
+ 
+  let html = "<div class='bonus-serit'>";
+ 
+  for (let i = 0; i < liste.length; i++) {
+    let b = liste[i];
+    let kalanSn = Math.max(0, Math.round((b.bitis - Date.now()) / 1000));
+    let dk = Math.floor(kalanSn / 60);
+    let sn = kalanSn % 60;
+ 
+    html = html +
+      "<span class='bonus-rozet' title='" + b.kaynak + "'>" +
+      bonusIkonu(b.tur) + " +%" + Math.round(b.deger * 100) + " " +
+      bonusAdi(b.tur) +
+      "<span class='bonus-sure' data-bitis='" + b.bitis + "'>" +
+      dk + ":" + (sn < 10 ? "0" : "") + sn +
+      "</span></span>";
+  }
+ 
+  return html + "</div>";
+}
+
 export function tumEkraniCiz() {
   menuCiz();
   icerikCiz();
+ 
+  // Bonus şeridi içeriğin en üstüne eklenir
+  let serit = bonusSeridiHtml();
+  if (serit !== "") {
+    icerikAlani.innerHTML = serit + icerikAlani.innerHTML;
+  }
 }
 
 // ---------- HEDEFLİ GÜNCELLEMELER ----------
@@ -1582,4 +1844,15 @@ export function cubuklariGuncelle() {
 
     savasCubugu.style.width = yuzde + "%";
   }
+  
+  // Bonus sürelerini güncelle
+  let sureler = document.querySelectorAll(".bonus-sure");
+  for (let i = 0; i < sureler.length; i++) {
+    let bitis = parseInt(sureler[i].getAttribute("data-bitis"));
+    let kalan = Math.max(0, Math.round((bitis - Date.now()) / 1000));
+    let dk = Math.floor(kalan / 60);
+    let sn = kalan % 60;
+    sureler[i].textContent = dk + ":" + (sn < 10 ? "0" : "") + sn;
+  }
+
 }

@@ -78,6 +78,17 @@ export let yardimlar = {
           "Altını çoğunlukla savaştan ve fazla malzeme satarak kazanırsın."
         ]
       },
+
+      {
+        baslik: "Kalıcı yükseltmeler",
+        satirlar: [
+          "Altınla alınan, bir kez alınıp kalıcı olan geliştirmeler.",
+          "Clan yükseltmeleriyle çakışmazlar — farklı şeyler verirler.",
+          "Fiyatlar sert artar; altının uzun vadeli gideri budur.",
+          "Sırt Çantası envanteri, Tüccar Lisansı satış gelirini artırır."
+        ]
+      },
+
       {
         baslik: "Aletler",
         satirlar: [
@@ -121,23 +132,32 @@ export let yardimlar = {
   },
 
     clan: {
-    ozet: "Clan kurup kaynak bağışlayarak tüm üyelere fayda sağlayan bonuslar açarsın.",
+    ozet: "Nişan bağışlayarak clan seviyeni yükseltir, kazandığın puanlarla kalıcı yükseltmeler açarsın.",
     bolumler: [
       {
-        baslik: "Nasıl çalışır",
+        baslik: "Nişan ve seviye",
         satirlar: [
-          "Envanterindeki fazla malzemeleri clan deposuna bağışlarsın.",
-          "Her bağış clan puanı kazandırır, puan birikince clan seviye atlar.",
-          "Clan seviyesi belirli eşiklere ulaşınca kalıcı bonuslar açılır.",
-          "Ekipmanlar bağışlanamaz — sadece malzemeler."
+          "Clan Nişanı, toplama/üretim/savaş yaparken şansa bağlı düşer — savaşta daha sık.",
+          "Nişan envanterde yer kaplamaz, ayrı bir sayaçta birikir.",
+          "Bağışladığın her nişan clan puanı verir; puan birikince clan seviye atlar.",
+          "Her clan seviyesi 1 yükseltme puanı kazandırır."
         ]
       },
       {
-        baslik: "Bonuslar hakkında",
+        baslik: "Yükseltme ağacı",
         satirlar: [
-          "Bonuslar bilinçli olarak mütevazı tutuldu.",
-          "Clansız oynayan biri geri kalmaz, sadece biraz yavaş ilerler.",
-          "Amaç zorunluluk değil, fazla kaynağa anlam katmak."
+          "Puanları beş dala harcarsın: Ambar, Atölye, Pazar, Mutfak, Depo.",
+          "Üst kademeler daha pahalıdır — tüm dalları maksimuma çıkarmak mümkün değil.",
+          "Bu yüzden hangi yolu seçeceğin gerçek bir karar.",
+          "Yükseltmeler kalıcıdır ve anında etkili olur."
+        ]
+      },
+      {
+        baslik: "Clan deposu",
+        satirlar: [
+          "Bağıştan farklı: depoya koyduğun eşya kaybolmaz, geri alabilirsin.",
+          "Envanterin dolduğunda taşma alanı olarak kullanabilirsin.",
+          "Depo kapasitesi Depo dalını yükselterek artar."
         ]
       },
       {
@@ -145,13 +165,14 @@ export let yardimlar = {
         satirlar: [
           "Şu an clan sadece sana ait — tek üyesi sensin.",
           "Sunucu altyapısı hazır olduğunda arkadaşların katılabilecek.",
-          "Bağışların ve clan seviyen o zaman da korunacak."
+          "Bağışların, yükseltmelerin ve depon o zaman da korunacak."
         ]
       }
     ],
     ipuclari: [
-      "Kemik gibi biriken ama işe yaramayan malzemeler bağış için idealdir.",
-      "Satmak mı bağışlamak mı daha iyi? Altına ihtiyacın varsa sat, yoksa bağışla."
+      "Savaş, nişan kazanmanın en verimli yoludur (%8).",
+      "Erken oyunda Ambar veya Atölye, geç oyunda Pazar daha çok işe yarar.",
+      "Clanı dağıtırsan depodaki eşyalar da silinir — önce boşalt."
     ]
   },
 
@@ -423,6 +444,16 @@ export let yardimlar = {
           "Bu bir üretim yeteneğidir: girdi tüketir, çıktı üretir.",
           "Ürettiğin yemeği Karakter sayfasındaki Yemek slotuna takman gerekir.",
           "Slottaki yemek elle veya otomatik olarak yenir."
+        ]
+      },
+      {
+        baslik: "Ziyafetler",
+        satirlar: [
+          "Sv 25'ten sonra çok malzemeli ziyafet tarifleri açılır.",
+          "Ziyafetler hem can yeniler hem süreli bir bonus verir.",
+          "Yemek slotuna girmezler — Karakter sayfasından doğrudan kullanılırlar.",
+          "Böylece otomatik yemek pahalı ziyafetini harcamaz.",
+          "Aynı türden birden fazla bonus varsa etkileri toplanır."
         ]
       }
     ],
