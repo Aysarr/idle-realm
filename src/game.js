@@ -1,4 +1,6 @@
-import { anaMenuGoster, menuDevamEt, menuYeniOyun, menuYedektenYukle } from "./menu.js";
+import {
+  anaMenuGoster, menuDevamEt, menuYeniOyun, menuYedektenYukle, menuSlotSil
+} from "./menu.js";
 import {
   sekmeAc, yardimDegistir, savasStiliSec,
   aksiyonBaslat, aksiyonDurdur,
@@ -14,6 +16,8 @@ import {
   clanYukseltmeAl, depoyaKoy, depodanAl, depoyaKoySor, depodanAlSor,
   aletYukselt, ziyafetYe, dukkanYukseltmeAl, satSor,
   sesAcKapat, sesSeviyesiDegistir, sesOrnekCal, aksiyonSesiDegistir,
+  muzikAcKapatBtn, muzikSeviyesiDegistir, muzikDinle,
+  kronikOku,
 } from "./gameplay.js";
 import { bonuslariTemizle } from "./core.js";
 
@@ -70,10 +74,15 @@ window.sesAcKapat = sesAcKapat;
 window.sesSeviyesiDegistir = sesSeviyesiDegistir;
 window.sesOrnekCal = sesOrnekCal;
 window.aksiyonSesiDegistir = aksiyonSesiDegistir;
+window.muzikAcKapatBtn = muzikAcKapatBtn;
+window.muzikSeviyesiDegistir = muzikSeviyesiDegistir;
+window.muzikDinle = muzikDinle;
+window.kronikOku = kronikOku;
 
 window.menuDevamEt = menuDevamEt;
 window.menuYeniOyun = menuYeniOyun;
 window.menuYedektenYukle = menuYedektenYukle;
+window.menuSlotSil = menuSlotSil;
 
 anaMenuGoster();
 

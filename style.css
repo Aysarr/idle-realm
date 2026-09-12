@@ -20,7 +20,7 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  max-width: 760px;
+  max-width: 1180px;
 }
 
 h1 {
@@ -61,15 +61,17 @@ button:hover {
 
 /* ---------- DÜZEN ---------- */
 
+/* Izgara: ust cubuk iki kolonu birden kaplar, altta menu + icerik */
 #uygulama {
-  display: flex;
+  display: grid;
+  grid-template-columns: 185px 1fr;
+  grid-template-rows: auto 1fr;
   gap: 14px;
-  align-items: flex-start;
+  align-items: start;
 }
 
 #menu {
-  width: 165px;
-  flex-shrink: 0;
+  grid-column: 1;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -77,6 +79,7 @@ button:hover {
 }
 
 #icerik {
+  grid-column: 2;
   flex: 1;
   min-width: 0;
 }
@@ -296,7 +299,12 @@ button:hover {
 
 @media (max-width: 620px) {
   #uygulama {
-    flex-direction: column;
+    grid-template-columns: 1fr;
+  }
+
+  #menu,
+  #icerik {
+    grid-column: 1;
   }
 
   #menu {
@@ -1455,4 +1463,1112 @@ button:active:not(:disabled) {
 
 .ilerleme-dolu.mavi {
   transition: width 0.06s linear;
+}
+
+/* ---------- ANLATI PENCERESİ ---------- */
+ 
+.modal-kutu.anlati {
+  max-width: 440px;
+}
+ 
+.anlati-baslik {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+ 
+.anlati-govde {
+  max-height: 60vh;
+  overflow-y: auto;
+  margin-bottom: 18px;
+}
+ 
+.anlati-paragraf {
+  color: var(--text);
+  font-size: 0.92rem;
+  line-height: 1.65;
+  margin: 0 0 14px 0;
+  white-space: pre-line;
+}
+ 
+.anlati-paragraf:last-child {
+  margin-bottom: 0;
+}
+ 
+.anlati-paragraf strong {
+  color: var(--gold);
+}
+ 
+/* ---------- KRONİK ---------- */
+ 
+.kronik-kart {
+  cursor: pointer;
+}
+ 
+.kronik-kart:hover {
+  border-color: var(--accent);
+}
+ 
+.bildirim.kronik {
+  border-color: #b07cff;
+}
+ 
+.bildirim.kronik .bildirim-icerik {
+  color: #b07cff;
+}
+
+/* ---------- ÜST BİLGİ ÇUBUĞU ---------- */
+ 
+#ust-cubuk {
+  grid-column: 1 / -1;   /* iki kolonu birden kapla */
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  top: 0;
+  z-index: 100;
+  background: linear-gradient(180deg, #1a1d25 0%, #171a21 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  border-radius: 0 0 12px 12px;
+}
+ 
+.ust-marka {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  margin-right: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+ 
+.ust-marka-ikon {
+  font-size: 1.25rem;
+}
+ 
+.ust-rozet {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #14161c;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 5px 13px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+ 
+.ust-rozet.altin { color: var(--gold); }
+.ust-rozet.can { color: #5fd67a; }
+.ust-rozet.nisan { color: #b07cff; }
+ 
+.ust-rozet-etiket {
+  color: var(--text-dim);
+  font-weight: 400;
+  font-size: 0.78rem;
+}
+ 
+ 
+/* ---------- YETENEK SAYFASI BAŞLIK BANDI ---------- */
+ 
+.skill-band {
+  /* --skill-renk ui.js tarafından satır içi atanıyor */
+  background: linear-gradient(135deg,
+    var(--skill-renk, var(--accent)) 0%,
+    color-mix(in srgb, var(--skill-renk, var(--accent)) 60%, #14161c) 100%);
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  overflow: hidden;
+}
+ 
+/* color-mix desteklemeyen tarayıcılar için düz renk yedeği */
+@supports not (background: color-mix(in srgb, red, blue)) {
+  .skill-band {
+    background: var(--skill-renk, var(--accent));
+  }
+}
+ 
+.skill-band::after {
+  /* Sağ üstte soluk büyük ikon — dolgu hissi verir */
+  content: attr(data-ikon);
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 5rem;
+  opacity: 0.13;
+  pointer-events: none;
+}
+ 
+.skill-band-ikon {
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  background: rgba(0, 0, 0, 0.28);
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.9rem;
+}
+ 
+.skill-band-bilgi {
+  flex: 1;
+  min-width: 0;
+  z-index: 1;
+}
+ 
+.skill-band-ad {
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+ 
+.skill-band-alt {
+  font-size: 0.82rem;
+  opacity: 0.92;
+  margin-top: 3px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+ 
+.skill-band-cubuk {
+  height: 6px;
+  background: rgba(0, 0, 0, 0.32);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 9px;
+}
+ 
+.skill-band-dolu {
+  height: 100%;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+ 
+.skill-band-yardim {
+  background: rgba(0, 0, 0, 0.28);
+  border: none;
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: 50%;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  z-index: 1;
+  margin-left: 0;
+  padding: 0;
+}
+ 
+.skill-band-yardim:hover {
+  background: rgba(0, 0, 0, 0.45);
+}
+ 
+ 
+/* ---------- AKSİYON IZGARASI ---------- */
+ 
+.aksiyon-izgara {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 11px;
+  margin-bottom: 18px;
+}
+ 
+.aksiyon-kutu {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: border-color 0.15s, transform 0.08s;
+}
+ 
+.aksiyon-kutu:hover:not(.kilitli-kutu) {
+  border-color: var(--skill-renk, var(--accent));
+}
+ 
+/* Üstteki renkli şerit — durumu bir bakışta belli eder */
+.aksiyon-kutu::before {
+  content: "";
+  display: block;
+  height: 3px;
+  background: var(--border);
+}
+ 
+.aksiyon-kutu.calisiyor::before {
+  background: var(--skill-renk, var(--accent));
+}
+ 
+.aksiyon-kutu.hazir::before {
+  background: #3d8b4a;
+}
+ 
+.aksiyon-kutu.malzeme-yok::before {
+  background: #8a6a3a;
+}
+ 
+.aksiyon-kutu.kilitli-kutu::before {
+  background: #6a3a3a;
+}
+ 
+.aksiyon-kutu.calisiyor {
+  border-color: var(--skill-renk, var(--accent));
+  box-shadow: 0 0 0 1px var(--skill-renk, var(--accent));
+}
+ 
+.aksiyon-ic {
+  padding: 12px 12px 11px 12px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 7px;
+}
+ 
+.aksiyon-ust-yazi {
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.9px;
+  color: var(--text-dim);
+  text-align: center;
+}
+ 
+.aksiyon-ad {
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.25;
+}
+ 
+.aksiyon-gorsel {
+  font-size: 2.6rem;
+  text-align: center;
+  line-height: 1;
+  margin: 5px 0 3px 0;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+ 
+.aksiyon-kutu.kilitli-kutu .aksiyon-gorsel {
+  filter: grayscale(1) brightness(0.55);
+}
+ 
+.aksiyon-satir {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  text-align: center;
+  line-height: 1.45;
+}
+ 
+.aksiyon-satir .yeterli { color: #5fd67a; }
+.aksiyon-satir .yetersiz { color: #ff7a7a; }
+ 
+.aksiyon-cubuk-yuva {
+  height: 7px;
+  background: #0d0f14;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: auto;
+}
+ 
+.aksiyon-cubuk-dolu {
+  height: 100%;
+  background: var(--skill-renk, var(--accent));
+  width: 0%;
+  border-radius: 4px;
+}
+ 
+/* Ustalık satırı */
+.aksiyon-ustalik {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 3px;
+}
+ 
+.aksiyon-ustalik-rozet {
+  font-size: 0.68rem;
+  color: #b07cff;
+  font-weight: 600;
+  white-space: nowrap;
+}
+ 
+.aksiyon-ustalik-cubuk {
+  flex: 1;
+  height: 3px;
+  background: #0d0f14;
+  border-radius: 2px;
+  overflow: hidden;
+}
+ 
+.aksiyon-ustalik-dolu {
+  height: 100%;
+  background: #b07cff;
+}
+ 
+/* Kilitli kutunun alt şeridi */
+.aksiyon-kilit-serit {
+  background: #3a2428;
+  color: #ff9a9a;
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 7px 8px;
+  line-height: 1.35;
+}
+ 
+/* Alt buton */
+.aksiyon-buton {
+  border: none;
+  border-top: 1px solid var(--border);
+  background: #191c23;
+  color: var(--text);
+  padding: 10px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  margin-left: 0;
+  border-radius: 0;
+  width: 100%;
+}
+ 
+.aksiyon-buton:hover:not(:disabled) {
+  background: #232732;
+}
+ 
+.aksiyon-buton.baslat {
+  color: #7ee095;
+}
+ 
+.aksiyon-buton.durdur {
+  color: #ff8f8f;
+}
+ 
+.aksiyon-buton:disabled {
+  color: var(--text-dim);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+ 
+ 
+/* ---------- KADEME BÖLÜM BAŞLIĞI ---------- */
+ 
+.kademe-baslik {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0 11px 0;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--text-dim);
+}
+ 
+.kademe-baslik::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+ 
+ 
+/* ---------- MOBİL ---------- */
+ 
+@media (max-width: 620px) {
+  .aksiyon-izgara {
+    grid-template-columns: repeat(auto-fill, minmax(138px, 1fr));
+    gap: 8px;
+  }
+ 
+  .aksiyon-gorsel {
+    font-size: 2.1rem;
+  }
+ 
+  .skill-band {
+    padding: 14px 15px;
+    gap: 12px;
+  }
+ 
+  .skill-band-ikon {
+    width: 46px;
+    height: 46px;
+    min-width: 46px;
+    font-size: 1.5rem;
+  }
+ 
+  .skill-band-ad {
+    font-size: 1.12rem;
+  }
+ 
+  .skill-band::after {
+    font-size: 3.5rem;
+  }
+ 
+  #ust-cubuk {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+ 
+  .ust-marka {
+    font-size: 0.95rem;
+    width: 100%;
+    margin-right: 0;
+  }
+ 
+  .ust-rozet {
+    padding: 4px 10px;
+    font-size: 0.78rem;
+  }
+}
+
+/* ---------- EKSIK KALAN SINIFLAR ---------- */
+
+/* Yetenek sayfasinin sarmalayicisi. Tek isi --skill-renk
+   degiskenini alt ogelere tasimak; gorsel bir etkisi yok. */
+.skill-sayfa {
+  display: block;
+}
+
+/* Ekipman izgarasindaki bos hucreler (slotDuzeni'nde null olanlar) */
+.slot-bos-hucre {
+  aspect-ratio: 1;
+}
+
+/* Clan nisan kartindaki metin blogu */
+.nisan-bilgi {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ============================================================
+   ARKA PLAN ATMOSFERİ
+   
+   Dosya kullanmadan, saf CSS ile derinlik. Dört katman:
+     1. Taban gradyan   — düz renk yerine derinlik
+     2. Kenar karartma  — vinyet, ortaya odaklar
+     3. Doku            — çok soluk gürültü (SVG data-uri, ~200 bayt)
+     4. Sis             — yavaşça sürüklenen bulut (Sönüm teması)
+   
+   Ayrıca paneller artık düz renk değil, hafif gradyanlı.
+   
+   Bu bloğu style.css'in SONUNA ekle.
+   ============================================================ */
+
+
+/* ---------- 1) TABAN: düz renk yerine gradyan ---------- */
+
+body {
+  /* Üstte biraz daha koyu, altta hafif morumsu — gökyüzü hissi */
+  background:
+    linear-gradient(180deg,
+      #0f1116 0%,
+      #14161c 45%,
+      #171620 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+  position: relative;
+}
+
+
+/* ---------- 2) KENAR KARARTMA + FENER IŞIĞI ---------- */
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    /* Sol üstten sıcak fener ışığı — köyün feneri */
+    radial-gradient(
+      620px circle at 12% 8%,
+      rgba(255, 180, 84, 0.055) 0%,
+      transparent 65%),
+    /* Sağ alttan soğuk gölge — Sönüm'ün yaklaştığı yön */
+    radial-gradient(
+      760px circle at 88% 94%,
+      rgba(108, 92, 180, 0.05) 0%,
+      transparent 62%),
+    /* Vinyet: kenarları karart, ortaya odakla */
+    radial-gradient(
+      140% 105% at 50% 42%,
+      transparent 42%,
+      rgba(0, 0, 0, 0.42) 100%);
+}
+
+
+/* ---------- 3) DOKU: çok soluk gürültü ---------- */
+/*
+   Bir SVG gürültü filtresini data-uri olarak gömüyoruz.
+   Dosya indirmesi yok, ~200 bayt. Opaklık çok düşük —
+   fark edilmez ama "düz plastik" hissini kırar.
+*/
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.16;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+
+
+/* ---------- 4) SİS: yavaşça sürüklenen katman ---------- */
+/*
+   Sönüm'ün görsel karşılığı. Çok yavaş hareket ediyor (90 sn)
+   ve neredeyse görünmez — ama ekranın "canlı" olduğunu
+   hissettiriyor.
+   
+   transform kullanıyoruz (position değil) çünkü ekran kartı
+   onu bedavaya hesaplıyor; sayfa yavaşlamıyor.
+*/
+
+#sis-katmani {
+  position: fixed;
+  top: -20%;
+  left: -30%;
+  width: 160%;
+  height: 140%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.5;
+  background:
+    radial-gradient(
+      480px 260px at 20% 30%,
+      rgba(150, 160, 200, 0.035) 0%,
+      transparent 70%),
+    radial-gradient(
+      600px 300px at 70% 60%,
+      rgba(130, 140, 180, 0.03) 0%,
+      transparent 72%),
+    radial-gradient(
+      400px 220px at 45% 85%,
+      rgba(170, 150, 190, 0.028) 0%,
+      transparent 70%);
+  animation: sisSuruklen 90s ease-in-out infinite alternate;
+}
+
+@keyframes sisSuruklen {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(3%, -2%, 0) scale(1.06);
+  }
+  100% {
+    transform: translate3d(-2%, 2%, 0) scale(1.02);
+  }
+}
+
+/* Hareket hassasiyeti olan kullanıcılar için sisi durdur */
+@media (prefers-reduced-motion: reduce) {
+  #sis-katmani {
+    animation: none;
+  }
+}
+
+
+/* ---------- İÇERİK KATMANLARINI ÖNE AL ---------- */
+
+#uygulama,
+#bildirimler,
+#menu-ekrani,
+#modal-ekrani,
+#efekt-katmani {
+  position: relative;
+  z-index: 1;
+}
+
+#menu-ekrani.acik,
+#modal-ekrani.acik {
+  z-index: 200;
+}
+
+
+/* ---------- PANELLERE DERİNLİK ---------- */
+/*
+   Düz renk yerine çok hafif gradyan + iç parlaklık.
+   Kartlar artık zeminden "ayrık" duruyor.
+*/
+
+.kart,
+.xp-panel,
+.stat-kutu,
+#menu,
+.savas-log,
+.yardim-panel {
+  background:
+    linear-gradient(180deg,
+      rgba(255, 255, 255, 0.022) 0%,
+      transparent 55%),
+    var(--panel);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.aksiyon-kutu {
+  background:
+    linear-gradient(180deg,
+      rgba(255, 255, 255, 0.028) 0%,
+      transparent 50%),
+    var(--panel);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+/* Çalışan kartın gölgesi kendi renginde parlıyor */
+.aksiyon-kutu.calisiyor {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 1px var(--skill-renk, var(--accent)),
+    0 3px 14px -4px var(--skill-renk, var(--accent));
+}
+
+/* Üst çubuk zeminden ayrılsın */
+#ust-cubuk {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 3px 14px rgba(0, 0, 0, 0.35);
+}
+
+/* Menüdeki aktif öğe hafif parlasın */
+.menu-oge.aktif {
+  box-shadow: inset 0 0 0 1px rgba(108, 140, 255, 0.25);
+}
+
+
+/* ---------- BAŞLIK BANDINA DOKU ---------- */
+/*
+   Renkli banda ince çapraz çizgiler — düz renk yerine
+   "kumaş/flama" hissi.
+*/
+
+.skill-band {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 4px 18px -6px var(--skill-renk, var(--accent));
+}
+
+.skill-band::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.035) 0px,
+    rgba(255, 255, 255, 0.035) 2px,
+    transparent 2px,
+    transparent 7px);
+}
+
+
+/* ---------- MOBİL: hafiflet ---------- */
+
+@media (max-width: 620px) {
+  /* Telefonda sis ve doku pil harcamasın */
+  #sis-katmani {
+    animation: none;
+    opacity: 0.3;
+  }
+
+  body::after {
+    opacity: 0.1;
+  }
+}
+
+
+/* ---------- LOGOLAR ---------- */
+/*
+   İki logo kullanıyoruz:
+     logo.png      — örs + çekiç, açılış menüsünde
+     logo-yazi.png — sadece yazı, üst çubukta
+   
+   Resim yüklenemezse alt metin görünür ve oyun çalışmaya
+   devam eder — logo eksikliği oyunu bozmaz.
+*/
+
+/* Üst çubuktaki yazı logosu */
+.ust-logo {
+  height: 26px;
+  width: auto;
+  display: block;
+  /* Altın renkli hafif parıltı — zeminden ayrılsın */
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6));
+}
+
+.ust-marka {
+  /* Logo geldiği için metin hizalaması gerekmiyor */
+  display: flex;
+  align-items: center;
+}
+
+/* Açılış menüsündeki tam logo */
+.menu-logo-resim {
+  width: 100%;
+  max-width: 260px;
+  height: auto;
+  display: block;
+  margin: 0 auto 4px auto;
+  filter: drop-shadow(0 6px 20px rgba(255, 140, 40, 0.18));
+}
+
+/* Menü kutusu logoya yer açsın */
+.menu-kutu {
+  max-width: 340px;
+}
+
+@media (max-width: 620px) {
+  .ust-logo {
+    height: 22px;
+  }
+
+  .menu-logo-resim {
+    max-width: 210px;
+  }
+}
+
+
+/* ============================================================
+   AÇILIŞ MENÜSÜ — İKİ KOLONLU DÜZEN
+   ============================================================ */
+
+#menu-ekrani.acik {
+  /* Menü artık ortada küçük bir kutu değil, tam ekran */
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 24px 18px;
+}
+
+.menu-duzen {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 26px;
+  width: 100%;
+  max-width: 900px;
+  align-items: start;
+}
+
+/* ---------- SOL KOLON ---------- */
+
+.menu-sol {
+  text-align: center;
+  padding-top: 6px;
+}
+
+.menu-sol .menu-logo-resim {
+  max-width: 250px;
+  margin-bottom: 6px;
+}
+
+.menu-slogan {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.menu-surum {
+  color: var(--text-dim);
+  font-size: 0.72rem;
+  opacity: 0.65;
+  margin-top: 5px;
+}
+
+.menu-tanitim {
+  margin-top: 20px;
+  text-align: left;
+  background: rgba(20, 22, 28, 0.55);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--gold);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.menu-tanitim p {
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  margin: 0 0 10px 0;
+}
+
+.menu-tanitim p:last-child {
+  margin-bottom: 0;
+}
+
+.menu-tanitim strong {
+  color: var(--gold);
+}
+
+.menu-ozellikler {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.menu-etiket {
+  background: #14161c;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 4px 11px;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+
+/* ---------- SAĞ KOLON ---------- */
+
+.menu-sag {
+  min-width: 0;
+}
+
+.menu-sag-baslik {
+  font-size: 1.45rem;
+  font-weight: 700;
+  margin-bottom: 9px;
+}
+
+.menu-uyari {
+  background: rgba(255, 180, 84, 0.07);
+  border: 1px solid rgba(255, 180, 84, 0.22);
+  border-radius: 9px;
+  padding: 9px 13px;
+  font-size: 0.77rem;
+  color: var(--gold);
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+
+.slot-listesi {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  margin-bottom: 14px;
+}
+
+/* ---------- KAYIT BÖLMESİ KARTI ---------- */
+
+.slot-kart {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025) 0%, transparent 55%),
+    var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 13px 15px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035),
+              0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+/* Boş bölme — tıklanabilir, kesikli çerçeve */
+.slot-kart.bos {
+  border-style: dashed;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.slot-kart.bos:hover {
+  border-color: var(--accent);
+  background: rgba(108, 140, 255, 0.05);
+}
+
+.slot-bos-ic {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 14px 0 8px 0;
+}
+
+.slot-bos-ikon {
+  font-size: 1.5rem;
+  color: var(--text-dim);
+  opacity: 0.5;
+}
+
+.slot-bos-yazi {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+.slot-ust {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 11px;
+}
+
+.slot-no {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 1.1px;
+  color: var(--text-dim);
+}
+
+.slot-zaman {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  opacity: 0.8;
+}
+
+.slot-govde {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.slot-avatar {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  background: #14161c;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+.slot-kimlik {
+  min-width: 0;
+}
+
+.slot-ad {
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.slot-alt {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.slot-sonuk {
+  opacity: 0.55;
+}
+
+/* Dört küçük istatistik */
+.slot-istatistikler {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 7px;
+  margin-bottom: 10px;
+}
+
+.slot-ist {
+  background: #14161c;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 5px;
+  text-align: center;
+}
+
+.slot-ist-etiket {
+  display: block;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-dim);
+  margin-bottom: 2px;
+}
+
+.slot-ist-deger {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.slot-ist-deger.altin {
+  color: var(--gold);
+}
+
+.slot-bolge {
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  margin-bottom: 11px;
+  padding-left: 2px;
+}
+
+.slot-butonlar {
+  display: flex;
+  gap: 7px;
+}
+
+.slot-buton {
+  flex: 1;
+  margin-left: 0;
+  padding: 9px;
+  border-radius: 8px;
+  font-size: 0.87rem;
+  font-weight: 600;
+}
+
+.slot-buton.ana {
+  background: #2a3550;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.slot-buton.kucuk {
+  flex: 0 0 44px;
+  font-size: 0.95rem;
+  color: var(--text-dim);
+}
+
+.slot-buton.kucuk:hover {
+  border-color: var(--hp-enemy);
+  color: var(--hp-enemy);
+}
+
+/* ---------- MOBİL ---------- */
+
+@media (max-width: 780px) {
+  .menu-duzen {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    max-width: 420px;
+  }
+
+  .menu-tanitim {
+    display: none;   /* telefonda yer kazanmak için */
+  }
+
+  .menu-sol .menu-logo-resim {
+    max-width: 200px;
+  }
+
+  .menu-sag-baslik {
+    font-size: 1.2rem;
+  }
+
+  .slot-istatistikler {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }

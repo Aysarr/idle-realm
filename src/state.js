@@ -48,6 +48,11 @@ export let state = {
   // null ise oyuncu henüz clan kurmamış
   clan: null,
 
+  // Hikaye takibi
+  acilisGosterildi: false,
+  gorulenBolgeAnlatilari: [],
+  acilanKronikler: [],
+
     // Açılan başarımların id listesi
   acilanBasarimlar: [],
 
@@ -149,6 +154,9 @@ export const KAYDEDILECEK_ALANLAR = [
   "oyuncuAdi",
   "oyuncuId",
   "oyunBaslangici",
+  "acilisGosterildi",
+  "gorulenBolgeAnlatilari",
+  "acilanKronikler",
 
   // İlerleme
   "istatistik",

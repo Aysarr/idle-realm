@@ -109,6 +109,15 @@ export let yardimlar = {
     ozet: "Kayıt yönetimi ve oyun ayarları.",
     bolumler: [
       {
+        baslik: "Müzik ve Ses",
+        satirlar: [
+          "Müzik ve ses efektleri ayrı ayrı açılıp kapatılabilir.",
+          "Menüde ve oyun içinde farklı müzik parçaları çalar.",
+          "Müzik ayarı cihaza aittir — karakter değiştirsen de korunur.",
+          "Aksiyon sesi ayrı bir anahtarla kontrol edilir; uzun seanslarda kapatabilirsin."
+        ]
+      },
+      {
         baslik: "Kaydın nerede duruyor",
         satirlar: [
           "İlerlemen bu tarayıcının hafızasında saklanır, bir sunucuda değil.",
@@ -278,6 +287,32 @@ export let yardimlar = {
     ipuclari: [
       "Ödüller çoğunlukla altındır — dükkânda işine yarar.",
       "Sebat başarımları sadece oyunda kalmakla açılır."
+    ]
+  },
+
+  chronicle: {
+    ozet: "Bu dünyada olanlar. Oynarken parça parça açılır.",
+    bolumler: [
+      {
+        baslik: "Nasıl çalışır",
+        satirlar: [
+          "Kronik kayıtları ilerlemene bağlı olarak kendiliğinden açılır.",
+          "Seviye atlamak, yeni bölge açmak, canavar öldürmek — hepsi yeni kayıt getirebilir.",
+          "Açılan bir kayda tıklayarak tekrar okuyabilirsin."
+        ]
+      },
+      {
+        baslik: "Sönüm nedir",
+        satirlar: [
+          "Gölge Diyarı'ndan yayılan yavaş bir çürüme.",
+          "Renkleri, sıcaklığı ve canlılığı emiyor — bir savaş değil, bir aşınma.",
+          "İçeri doğru her bölge kaynağa bir adım daha yakın."
+        ]
+      }
+    ],
+    ipuclari: [
+      "Kilitli kayıtlar neyi gerektirdiğini söylemez — oynadıkça açılır.",
+      "Bölge anlatıları sadece ilk girişte gösterilir, ama Kronik'te kalıcıdır."
     ]
   },
 

@@ -1,6 +1,6 @@
 {
-  "name": "Idle Realm",
-  "short_name": "Idle Realm",
+  "name": "Everforge",
+  "short_name": "Everforge",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",

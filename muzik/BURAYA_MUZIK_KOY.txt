@@ -1,0 +1,13 @@
+MÜZİK DOSYALARI
+
+İki müzik dosyasını bu klasöre şu isimlerle koy:
+
+  menu.mp3   — açılış menüsünde çalacak parça
+  oyun.mp3   — oyun içinde çalacak parça
+
+Dosya isimleri tam olarak böyle olmalı (küçük harf, .mp3 uzantılı).
+
+Dosya yoksa oyun normal çalışır, sadece müzik olmaz —
+konsola bir uyarı düşer.
+
+Bu metin dosyasını silebilirsin.

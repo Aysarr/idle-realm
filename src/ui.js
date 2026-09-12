@@ -6,10 +6,12 @@ import { dukkanUrunleri } from "./data/shop.js";
 import { state, CAN_YENILENME_MS } from "./state.js";
 import { bolgeler } from "./data/regions.js";
 import { yardimlar, ustalikBolumu } from "./data/help.js";
+import { muzikAcikMi, muzikSeviyesiAl } from "./music.js";
 import { clanDallari } from "./data/clan.js";
 import { basarimlar } from "./data/achievements.js";
 import { aletTurleri } from "./data/tools.js";
 import { dukkanYukseltmeleri } from "./data/shopUpgrades.js";
+import { kronikKayitlari } from "./data/lore.js";
 import {
   skillBul, itemBul, actionBul, slotBul,
   seviyeHesapla, seviyeBilgisi, skillSeviyesi,
@@ -31,7 +33,7 @@ import {
   nisanPuaniDegeri,aletKademesi, aletKademeBilgisi,
   maxSekmeSayisi, skillAletTuru, aletYeterliMi, ciftUrunSansi,
   sonrakiUstalikTasi, aktifBonusListesi, bonusAdi, bonusIkonu,
-  dukkanKademesi, satisCarpani,
+  dukkanKademesi, satisCarpani, kronikAcikMi, acilanKronikSayisi,
 } from "./core.js";
 
 // ============================================================
@@ -339,6 +341,14 @@ function menuCiz() {
     "<span class='menu-seviye'>" + state.acilanBasarimlar.length + "</span>" +
     "</div>";
 
+    html = html +
+    "<div class='menu-oge" + (state.acikSekme === "chronicle" ? " aktif" : "") + "' " +
+    "onclick='sekmeAc(\"chronicle\")'>" +
+    "<span class='menu-ikon'>📖</span>" +
+    "<span class='menu-isim'>Kronik</span>" +
+    "<span class='menu-seviye'>" + acilanKronikSayisi() + "</span>" +
+    "</div>";
+
       html = html +
     "<div class='menu-oge" + (state.acikSekme === "stats" ? " aktif" : "") + "' " +
     "onclick='sekmeAc(\"stats\")'>" +
@@ -382,212 +392,258 @@ function menuCiz() {
   menuAlani.innerHTML = html;
 }
 
+function aksiyonKutusuHtml(action) {
+  let acikMi = aksiyonAcikMi(action);
+  let aletVarMi = aletYeterliMi(action);
+  let calisiyor = state.aktifAksiyonId === action.id;
+  let malzemeVarMi = girdilerYeterliMi(action);
+ 
+  // --- KİLİTLİ ---
+  if (acikMi === false || aletVarMi === false) {
+    let sartlar = [];
+ 
+    if (acikMi === false) {
+      sartlar.push("Seviye " + aksiyonSeviyeGerekli(action));
+    }
+ 
+    if (aletVarMi === false) {
+      let alet = skillAletTuru(action.skillId);
+      let gerekli = aletKademeBilgisi(action.gerekliAletKademesi);
+      if (alet !== null && gerekli !== null) {
+        sartlar.push(gerekli.isim + " " + alet.isim);
+      }
+    }
+ 
+    // Kilitliyken ürünün ne olduğunu göster — hedef belli olsun
+    let hedefIkon = "❓";
+    if (action.ciktilar && action.ciktilar.length > 0) {
+      let ci = itemBul(action.ciktilar[0].itemId);
+      if (ci !== null) {
+        hedefIkon = ci.ikon;
+      }
+    }
+ 
+    return "<div class='aksiyon-kutu kilitli-kutu'>" +
+      "<div class='aksiyon-ic'>" +
+      "<div class='aksiyon-ust-yazi'>Kilitli</div>" +
+      "<div class='aksiyon-ad'>" + action.isim + "</div>" +
+      "<div class='aksiyon-gorsel'>" + hedefIkon + "</div>" +
+      "</div>" +
+      "<div class='aksiyon-kilit-serit'>🔒 " + sartlar.join(" + ") + "</div>" +
+      "</div>";
+  }
+ 
+  // --- Ürün ikonu ---
+  let urunIkon = "❓";
+  let urunAd = "";
+  if (action.ciktilar && action.ciktilar.length > 0) {
+    let ci = itemBul(action.ciktilar[0].itemId);
+    if (ci !== null) {
+      urunIkon = ci.ikon;
+      urunAd = ci.isim +
+        (action.ciktilar[0].miktar > 1 ? " ×" + action.ciktilar[0].miktar : "");
+    }
+  }
+ 
+  // --- Girdiler ---
+  let girdiYazisi = "";
+  if (action.girdiler) {
+    let parcalar = [];
+    for (let i = 0; i < action.girdiler.length; i++) {
+      let g = action.girdiler[i];
+      let gi = itemBul(g.itemId);
+      if (gi === null) {
+        continue;
+      }
+      let elimdeki = envanterdekiMiktar(g.itemId);
+      let yeterli = elimdeki >= g.miktar;
+      parcalar.push(
+        "<span class='" + (yeterli ? "yeterli" : "yetersiz") + "'>" +
+        gi.ikon + g.miktar + "</span>"
+      );
+    }
+    girdiYazisi = parcalar.join(" ");
+  }
+ 
+  // --- Süre, XP, bonuslar ---
+  let gercekSure = aksiyonSuresi(action);
+  let ustalikB = ustalikHizBonusu(action.id);
+  let clanB = clanHizBonusu();
+  let hizB = ustalikB + clanB;
+  let ciftSans = ciftUrunSansi(action);
+ 
+  let ustalik = ustalikBilgisi(action.id);
+  let sonrakiTas = sonrakiUstalikTasi(action.id);
+ 
+  // --- Durum sınıfı ---
+  let durumSinifi = "hazir";
+  if (calisiyor) {
+    durumSinifi = "calisiyor";
+  } else if (malzemeVarMi === false) {
+    durumSinifi = "malzeme-yok";
+  }
+ 
+  let html = "<div class='aksiyon-kutu " + durumSinifi + "'>" +
+    "<div class='aksiyon-ic'>" +
+    "<div class='aksiyon-ust-yazi'>" +
+    (gercekSure / 1000).toFixed(1) + "sn · +" + action.xp + " XP" +
+    "</div>" +
+    "<div class='aksiyon-ad'>" + action.isim + "</div>" +
+    "<div class='aksiyon-gorsel'>" + urunIkon + "</div>";
+ 
+  if (urunAd !== "") {
+    html = html + "<div class='aksiyon-satir'>" + urunAd + "</div>";
+  }
+ 
+  if (girdiYazisi !== "") {
+    html = html + "<div class='aksiyon-satir'>" + girdiYazisi + "</div>";
+  }
+ 
+  // Aktif bonuslar
+  let bonuslar = [];
+  if (hizB > 0) {
+    bonuslar.push("<span class='yeterli'>-%" +
+      Math.round(hizB * 100) + " süre</span>");
+  }
+  if (ciftSans > 0) {
+    bonuslar.push("<span class='yeterli'>%" +
+      Math.round(ciftSans * 100) + " çift</span>");
+  }
+  if (bonuslar.length > 0) {
+    html = html + "<div class='aksiyon-satir'>" + bonuslar.join(" · ") + "</div>";
+  }
+ 
+  // Ustalık
+  html = html +
+    "<div class='aksiyon-ustalik'>" +
+    "<span class='aksiyon-ustalik-rozet'>⭐" + ustalik.seviye + "</span>" +
+    "<span class='aksiyon-ustalik-cubuk'>" +
+    "<span class='aksiyon-ustalik-dolu' style='width:" +
+    ustalik.yuzde + "%'></span></span>" +
+    (sonrakiTas !== null
+      ? "<span class='aksiyon-ustalik-rozet' title='" +
+        sonrakiTas.aciklama + "'>" + sonrakiTas.seviye + "</span>"
+      : "<span class='aksiyon-ustalik-rozet'>✦</span>") +
+    "</div>";
+ 
+  // İlerleme çubuğu (sadece çalışırken doluyor)
+  html = html +
+    "<div class='aksiyon-cubuk-yuva'>" +
+    "<div class='aksiyon-cubuk-dolu'" +
+    (calisiyor ? " id='aksiyon-cubugu'" : "") +
+    "></div></div>";
+ 
+  html = html + "</div>";
+ 
+  // --- Buton ---
+  html = html +
+    "<button class='aksiyon-buton " + (calisiyor ? "durdur" : "baslat") + "' " +
+    "onclick='" +
+    (calisiyor ? "aksiyonDurdur()" : "aksiyonBaslat(\"" + action.id + "\")") +
+    "'" + (malzemeVarMi || calisiyor ? "" : " disabled") + ">" +
+    (calisiyor ? "■ Durdur" : (malzemeVarMi ? "▶ Başlat" : "Malzeme yok")) +
+    "</button>";
+ 
+  return html + "</div>";
+}
+
 // ---------- SKILL EKRANI ----------
 
 function skillEkraniCiz(acikSkill) {
   let bilgi = seviyeBilgisi(acikSkill.xp);
-
-  let html =
-    sayfaBasligi(acikSkill.id, acikSkill.ikon + " " + acikSkill.isim) +
-    "<div class='xp-panel'>" +
-    "<div class='xp-ust'>" +
-    "<span class='xp-seviye'>Seviye " + bilgi.seviye + "</span>" +
-    "<span class='xp-detay'>" +
+  let renk = acikSkill.renk ? acikSkill.renk : "#6c8cff";
+ 
+  // Sayfanın tamamı bu yeteneğin rengini kullanır
+  let html = "<div class='skill-sayfa' style='--skill-renk:" + renk + "'>";
+ 
+  // --- Renkli başlık bandı ---
+  html = html +
+    "<div class='skill-band' style='--skill-renk:" + renk + "' " +
+    "data-ikon='" + acikSkill.ikon + "'>" +
+    "<div class='skill-band-ikon'>" + acikSkill.ikon + "</div>" +
+    "<div class='skill-band-bilgi'>" +
+    "<div class='skill-band-ad'>" + acikSkill.isim + "</div>" +
+    "<div class='skill-band-alt'>Seviye " + bilgi.seviye + " / 99 · " +
     (bilgi.maxMi
       ? "MAX"
       : bilgi.seviyedeKazanilan.toLocaleString() + " / " +
         bilgi.seviyedeGereken.toLocaleString() + " XP") +
-    "</span>" +
     "</div>" +
-    "<div class='ilerleme'><div class='ilerleme-dolu altin' style='width:" +
+    "<div class='skill-band-cubuk'><div class='skill-band-dolu' style='width:" +
     bilgi.yuzde + "%'></div></div>" +
-    "<div class='xp-alt'>Toplam " + acikSkill.xp.toLocaleString() + " XP" +
-    (bilgi.maxMi
-      ? " · ⭐ Maksimum seviye!"
-      : " · Sonraki seviyeye " + bilgi.sonrakineKalan.toLocaleString() + " XP") +
     "</div>" +
+    (yardimlar[acikSkill.id] !== undefined
+      ? "<button class='skill-band-yardim' onclick='yardimDegistir()'>" +
+        (state.yardimAcik ? "✕" : "?") + "</button>"
+      : "") +
     "</div>";
-
-  if (acikSkill.kategori !== "combat") {
-    let ustalikYuzde = skillUstalikYuzdesi(acikSkill.id);
-    html = html +
-      "<div class='xp-panel'>" +
-      "<div class='xp-ust'>" +
-      "<span class='xp-seviye'>⭐ Ustalık İlerlemesi</span>" +
-      "<span class='xp-detay'>%" + ustalikYuzde.toFixed(1) + "</span>" +
-      "</div>" +
-      "<div class='ilerleme'><div class='ilerleme-dolu mor' style='width:" +
-      ustalikYuzde + "%'></div></div>" +
-      "<div class='xp-alt'>Her aksiyonun ayrı ustalığı var. " +
-      "Sv 10/40/80'de hızlanır, 25/60'ta çift ürün şansı, " +
-      "99'da %25 ekstra XP.</div>" +
-      "</div>";
-  }
-
-    // Bu yeteneğin aleti varsa göster
-  let skillAleti = skillAletTuru(acikSkill.id);
-  if (skillAleti !== null) {
-    let kademe = aletKademesi(skillAleti.id);
-    let bilgi = aletKademeBilgisi(kademe);
-
-    html = html +
-      "<div class='kart'>" +
-      "<span class='aksiyon-bilgi'>" +
-      "<strong>" + skillAleti.ikon + " " + bilgi.isim + " " +
-      skillAleti.isim + "</strong>" +
-      "<span class='alt-bilgi'>" +
-      (bilgi.ciftUrunSansi > 0
-        ? "%" + Math.round(bilgi.ciftUrunSansi * 100) + " çift ürün şansı"
-        : "Çift ürün şansı yok — dükkândan yükselt") +
-      "</span></span>" +
-      "<button onclick='sekmeAc(\"shop\")'>Dükkân</button>" +
-      "</div>";
-  }
-
-  // Savaş yeteneklerinin kendi aksiyonu yok - açıklaması yardım panelinde
+ 
+  html = html + yardimPaneli(acikSkill.id);
+ 
+  // --- Savaş yeteneklerinin aksiyonu yok ---
   if (acikSkill.kategori === "combat") {
-    icerikAlani.innerHTML = html;
+    html = html +
+      "<div class='kart'><span class='alt-bilgi'>" +
+      "Bu yetenek savaşarak gelişir. Canavarlar sayfasından " +
+      "savaş stilini seçip dövüşe gir." +
+      "</span><button onclick='sekmeAc(\"combat\")'>Canavarlar</button></div>";
+    icerikAlani.innerHTML = html + "</div>";
     return;
   }
-
+ 
+  // --- Ustalık özeti ---
+  let ustalikYuzde = skillUstalikYuzdesi(acikSkill.id);
+  let skillAleti = skillAletTuru(acikSkill.id);
+ 
+  html = html + "<div class='stat-satiri'>";
+ 
+  html = html +
+    "<div class='stat-kutu'><span class='stat-etiket'>⭐ Ustalık</span>" +
+    "<span class='stat-deger'>%" + ustalikYuzde.toFixed(1) + "</span></div>";
+ 
+  if (skillAleti !== null) {
+    let kademe = aletKademesi(skillAleti.id);
+    let aletBilgi = aletKademeBilgisi(kademe);
+    html = html +
+      "<div class='stat-kutu'><span class='stat-etiket'>" +
+      skillAleti.ikon + " " + skillAleti.isim + "</span>" +
+      "<span class='stat-deger' style='font-size:0.95rem'>" +
+      aletBilgi.isim + "</span></div>";
+  }
+ 
+  html = html +
+    "<div class='stat-kutu'><span class='stat-etiket'>Toplam XP</span>" +
+    "<span class='stat-deger' style='font-size:1rem'>" +
+    acikSkill.xp.toLocaleString() + "</span></div>";
+ 
+  html = html + "</div>";
+ 
+  // --- Aksiyon ızgarası ---
+  let izgara = "";
   let aksiyonVarMi = false;
-
+ 
   for (let i = 0; i < actions.length; i++) {
     let action = actions[i];
-
+ 
     if (action.skillId !== acikSkill.id) {
       continue;
     }
-
+ 
     aksiyonVarMi = true;
-
-    let acikMi = aksiyonAcikMi(action);
-    let buAksiyonAktif = state.aktifAksiyonId === action.id;
-    let malzemeVarMi = girdilerYeterliMi(action);
-
-        let aletVarMi = aletYeterliMi(action);
-
-    if (acikMi === false || aletVarMi === false) {
-      let sartlar = [];
-
-      if (acikMi === false) {
-        sartlar.push("Seviye " + aksiyonSeviyeGerekli(action));
-      }
-
-      if (aletVarMi === false) {
-        let alet = skillAletTuru(action.skillId);
-        let gerekli = aletKademeBilgisi(action.gerekliAletKademesi);
-        if (alet !== null) {
-          sartlar.push(gerekli.isim + " " + alet.isim);
-        }
-      }
-
-      html = html +
-        "<div class='kart kilitli'>" +
-        "<span class='aksiyon-bilgi'>" +
-        "<strong>🔒 " + action.isim + "</strong>" +
-        "<span class='alt-bilgi'>Gerekli: " + sartlar.join(" + ") + "</span>" +
-        "</span>" +
-        "<button disabled>Kilitli</button>" +
-        "</div>";
-      continue;
-    }
-
-    let ciktiYazisi = "";
-    if (action.ciktilar) {
-      ciktiYazisi = malzemeListesi(action.ciktilar, false);
-    }
-
-    let sansliYazisi = "";
-    if (action.sansliCiktilar) {
-      let parcalar = [];
-      for (let s = 0; s < action.sansliCiktilar.length; s++) {
-        let sc = action.sansliCiktilar[s];
-        let scItem = itemBul(sc.itemId);
-        if (scItem !== null) {
-          parcalar.push(
-            scItem.ikon + " " + scItem.isim + " %" + Math.round(sc.sans * 100)
-          );
-        }
-      }
-      if (parcalar.length > 0) {
-        sansliYazisi =
-          "<span class='alt-bilgi'>Şansa bağlı: " + parcalar.join(", ") + "</span>";
-      }
-    }
-
-    let girdiYazisi = "";
-    if (action.girdiler) {
-      girdiYazisi =
-        "<span class='alt-bilgi'>Gerekli: " +
-        malzemeListesi(action.girdiler, true) + "</span>";
-    }
-
-    let stokYazisi = "";
-    if (action.ciktilar && action.ciktilar.length > 0) {
-      let anaCikti = itemBul(action.ciktilar[0].itemId);
-      if (anaCikti !== null) {
-        stokYazisi = " · elinde: " + envanterdekiMiktar(anaCikti.id);
-      }
-    }
-
-    let ustalik = ustalikBilgisi(action.id);
-    let sonrakiTas = sonrakiUstalikTasi(action.id);
-    let ustalikBonusu = ustalikHizBonusu(action.id);
-    let clanBonusu = clanHizBonusu();
-    let hizBonusu = ustalikBonusu + clanBonusu;
-    let gercekSure = aksiyonSuresi(action);
-        let ciftSans = ciftUrunSansi(action);
-    let ciftYazisi = "";
-    if (ciftSans > 0) {
-      ciftYazisi = " · <span class='yeterli'>%" +
-        Math.round(ciftSans * 100) + " çift</span>";
-    }
-
-    html = html +
-      "<div class='kart " + (buAksiyonAktif ? "aktif-kart" : "") + "'>" +
-      "<span class='aksiyon-bilgi'>" +
-      "<strong>" + action.isim + "</strong>" +
-      "<span class='alt-bilgi'>Üretir: " + ciktiYazisi +
-      " · " + (gercekSure / 1000).toFixed(1) + "sn" +
-            (hizBonusu > 0
-        ? " <span class='yeterli' title='" +
-          "Ustalık: %" + Math.round(ustalikBonusu * 100) +
-          " · Clan: %" + Math.round(clanBonusu * 100) +
-          "'>(-%" + Math.round(hizBonusu * 100) + ")</span>"
-        : "") +
-      " · +" + action.xp + " XP" +
-      stokYazisi + ciftYazisi + "</span>" +
-      girdiYazisi +
-      sansliYazisi +
-      "<span class='ustalik-satiri'>" +
-      "<span class='ustalik-etiket'>⭐ " + ustalik.seviye + "</span>" +
-      "<span class='ustalik-cubuk'><span class='ustalik-dolu' style='width:" +
-      ustalik.yuzde + "%'></span></span>" +
-      (sonrakiTas !== null
-        ? "<span class='ustalik-hedef' title='" + sonrakiTas.aciklama + "'>→ " +
-          sonrakiTas.seviye + ": " + sonrakiTas.isim + "</span>"
-        : "<span class='ustalik-hedef yeterli'>✦ Efsane</span>") +
-      "</span>" +
-      "</span>" +
-      "<button onclick='" +
-      (buAksiyonAktif
-        ? "aksiyonDurdur()"
-        : "aksiyonBaslat(\"" + action.id + "\")") +
-      "'" + (malzemeVarMi || buAksiyonAktif ? "" : " disabled") + ">" +
-      (buAksiyonAktif ? "Durdur" : "Başlat") +
-      "</button>" +
-      (buAksiyonAktif ? ilerlemeCubugu("aksiyon-cubugu", "mavi", 0) : "") +
-      "</div>";
+    izgara = izgara + aksiyonKutusuHtml(action);
   }
-
+ 
   if (aksiyonVarMi === false) {
     html = html +
       "<div class='kart'><span class='alt-bilgi'>" +
       "Bu yetenek için henüz aksiyon yok.</span></div>";
+  } else {
+    html = html +
+      "<div class='kademe-baslik'>Aksiyonlar</div>" +
+      "<div class='aksiyon-izgara'>" + izgara + "</div>";
   }
-
-  icerikAlani.innerHTML = html;
+ 
+  icerikAlani.innerHTML = html + "</div>";
 }
 
 // ---------- SAVAŞ EKRANI ----------
@@ -1670,11 +1726,90 @@ function basarimEkraniCiz() {
   icerikAlani.innerHTML = html;
 }
 
+// ---------- KRONİK EKRANI ----------
+ 
+function kronikEkraniCiz() {
+  let html = sayfaBasligi("chronicle", "📖 Kronik");
+ 
+  let acilan = acilanKronikSayisi();
+  let toplam = kronikKayitlari.length;
+ 
+  html = html +
+    "<div class='xp-panel'>" +
+    "<div class='xp-ust'>" +
+    "<span class='xp-seviye'>Keşfedilen</span>" +
+    "<span class='xp-detay'>" + acilan + " / " + toplam + "</span>" +
+    "</div>" +
+    "<div class='ilerleme'><div class='ilerleme-dolu altin' style='width:" +
+    (acilan / toplam) * 100 + "%'></div></div>" +
+    "<div class='xp-alt'>Oynarken dünya hakkında yeni şeyler öğrenirsin. " +
+    "Kayıtlara tıklayarak tekrar okuyabilirsin.</div>" +
+    "</div>";
+ 
+  for (let i = 0; i < kronikKayitlari.length; i++) {
+    let k = kronikKayitlari[i];
+    let acikMi = kronikAcikMi(k.id);
+ 
+    if (acikMi === false) {
+      html = html +
+        "<div class='kart kilitli'>" +
+        "<span class='aksiyon-bilgi'>" +
+        "<strong>🔒 ???</strong>" +
+        "<span class='alt-bilgi'>Henüz keşfedilmedi</span>" +
+        "</span></div>";
+      continue;
+    }
+ 
+    // Metnin ilk satırını önizleme olarak göster
+    let onizleme = k.metin.split("\n")[0];
+    if (onizleme.length > 70) {
+      onizleme = onizleme.substring(0, 70) + "…";
+    }
+ 
+    html = html +
+      "<div class='kart kronik-kart' onclick='kronikOku(\"" + k.id + "\")'>" +
+      "<span class='aksiyon-bilgi'>" +
+      "<strong>" + k.ikon + " " + k.baslik + "</strong>" +
+      "<span class='alt-bilgi'>" + onizleme + "</span>" +
+      "</span>" +
+      "<span class='deger'>›</span>" +
+      "</div>";
+  }
+ 
+  icerikAlani.innerHTML = html;
+}
+
 // ---------- AYARLAR EKRANI ----------
 
 function ayarlarEkraniCiz() {
   let html = sayfaBasligi("settings", "⚙️ Ayarlar");
   
+  html = html + "<div class='baslik'>🎵 Müzik</div>";
+
+  html = html +
+    "<div class='kart'>" +
+    "<span class='aksiyon-bilgi'><strong>Arka Plan Müziği</strong>" +
+    "<span class='alt-bilgi'>Menüde ve oyun içinde farklı parçalar çalar. " +
+    "Bu ayar cihaza aittir, karaktere göre değişmez.</span></span>" +
+    "<button onclick='muzikAcKapatBtn()'>" +
+    (muzikAcikMi() ? "AÇIK" : "KAPALI") +
+    "</button></div>";
+
+  if (muzikAcikMi()) {
+    html = html +
+      "<div class='kart'>" +
+      "<span class='aksiyon-bilgi'><strong>Müzik Seviyesi</strong>" +
+      "<span class='alt-bilgi'>Ses efektlerinden bağımsız</span></span>" +
+      "<button onclick='muzikDinle()'>Dinle</button>" +
+      "<div class='esik-satiri'>" +
+      "<input type='range' min='0' max='100' step='5' value='" +
+      Math.round(muzikSeviyesiAl() * 100) + "' " +
+      "oninput='muzikSeviyesiDegistir(this.value)'>" +
+      "<span class='esik-deger' id='muzik-deger'>%" +
+      Math.round(muzikSeviyesiAl() * 100) + "</span>" +
+      "</div></div>";
+  }
+
   html = html + "<div class='baslik'>🔊 Ses</div>";
 
   html = html +
@@ -1782,6 +1917,11 @@ function icerikCiz() {
     return;
   }
 
+  if (state.acikSekme === "chronicle") {
+    kronikEkraniCiz();
+    return;
+  }
+
   let acikSkill = skillBul(state.acikSekme);
   if (acikSkill !== null) {
     skillEkraniCiz(acikSkill);
@@ -1821,7 +1961,44 @@ function bonusSeridiHtml() {
   return html + "</div>";
 }
 
+function ustCubukCiz() {
+  let alan = document.getElementById("ust-cubuk");
+  if (alan === null) {
+    return;
+  }
+ 
+  let can = state.oyuncuHp;
+  let maxCan = toplamMaxHp();
+ 
+  // Yazı logosu. Resim yüklenemezse (dosya eksikse) alt metin
+  // devreye girer — oyun yine de çalışır.
+  let html =
+    "<span class='ust-marka'>" +
+    "<img src='logo-yazi.png' alt='EVERFORGE' class='ust-logo'>" +
+    "</span>";
+ 
+  html = html +
+    "<span class='ust-rozet can'>❤️ " + can + " / " + maxCan + "</span>";
+ 
+  html = html +
+    "<span class='ust-rozet altin'>🪙 " +
+    state.altin.toLocaleString() + "</span>";
+ 
+  if (state.clanNisani > 0) {
+    html = html +
+      "<span class='ust-rozet nisan'>🎖️ " +
+      state.clanNisani.toLocaleString() + "</span>";
+  }
+ 
+  html = html +
+    "<span class='ust-rozet'><span class='ust-rozet-etiket'>Savaş</span> " +
+    savasSeviyesi() + "</span>";
+ 
+  alan.innerHTML = html;
+}
+
 export function tumEkraniCiz() {
+  ustCubukCiz();
   menuCiz();
   icerikCiz();
  

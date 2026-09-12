@@ -115,3 +115,42 @@ export function oyunPromptSayi(baslik, mesaj, varsayilan, minDeger, onGonder) {
     onGonder(sayi);
   });
 }
+
+// ---------- ANLATI PENCERESİ ----------
+//
+// Hikaye metinleri için. Normal alert'ten farkı: paragraflar
+// ayrı ayrı gösteriliyor ve **kalın** yazım destekliyor.
+ 
+export function oyunAnlati(baslik, paragraflar) {
+  window.__modalDevamEt = function () {
+    let ekran = document.getElementById("modal-ekrani");
+    if (ekran !== null) {
+      ekran.className = "";
+      ekran.innerHTML = "";
+    }
+  };
+ 
+  let govde = "";
+  for (let i = 0; i < paragraflar.length; i++) {
+    // **kalın** yazımı <strong> yap
+    let metin = paragraflar[i].replace(
+      /\*\*(.+?)\*\*/g,
+      "<strong>$1</strong>"
+    );
+    govde = govde + "<p class='anlati-paragraf'>" + metin + "</p>";
+  }
+ 
+  let ekran = document.getElementById("modal-ekrani");
+  if (ekran === null) {
+    return;
+  }
+ 
+  ekran.innerHTML =
+    "<div class='modal-kutu anlati'>" +
+    "<div class='anlati-baslik'>" + baslik + "</div>" +
+    "<div class='anlati-govde'>" + govde + "</div>" +
+    "<div class='modal-butonlar'>" +
+    "<button class='modal-buton ana' onclick='__modalDevamEt()'>Devam</button>" +
+    "</div></div>";
+  ekran.className = "acik";
+}

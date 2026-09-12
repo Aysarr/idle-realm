@@ -18,15 +18,24 @@ import {
   ustalikXpCarpani, bonusEkle, bonusDegeri, bonusAdi,
   dukkanDaliBul, dukkanKademesi, satisCarpani, okKorumaSansi, canYenilenmeCarpani,
 } from "./core.js";
+import { kayitAnahtari } from "./save.js";
 import { bildirimGoster } from "./notify.js";
 import { tumEkraniCiz, esikYazisiGuncelle } from "./ui.js";
 import { NISAN_NADIR_BONUS } from "./data/clan.js";
-import { oyunConfirm, oyunPrompt, oyunPromptSayi } from "./modal.js";
+import {
+  oyunConfirm, oyunPrompt, oyunPromptSayi, oyunAnlati
+} from "./modal.js";
 import {
   sesAksiyonTamam, sesVurus, sesIskalama, sesCanavarOldu, sesLoot,
   sesHasarAldin, sesOldun, sesSatinAlma, sesHata, sesYemek, sesDegistir, sesSeviyesiAyarla, sesSeviyeAtladi
 } from "./sound.js";
 import { ucanSayi, parlat, sarsit } from "./effects.js";
+import {
+  muzikAcKapat, muzikSeviyesiAyarla, muzikOrnekCal
+} from "./music.js";
+import {
+  bolgeAnlatilari, acilisMetni, kronikKayitlari
+} from "./data/lore.js";
 
 
 // ============================================================
@@ -169,8 +178,8 @@ export function yemekYe() {
       "<span class='bildirim-icerik'>Karakter ekranından yemek kuşan</span>",
       "hata"
     );
-    return;
     sesHata();
+    return;
   }
 
   if (state.oyuncuHp >= toplamMaxHp()) {
@@ -245,8 +254,8 @@ export function aksiyonBaslat(actionId) {
       aksiyonSeviyeGerekli(action) + " gerekli</span>",
       "hata"
     );
-    return;
     sesHata();
+    return;
   }
 
   if (aletYeterliMi(action) === false) {
@@ -259,8 +268,8 @@ export function aksiyonBaslat(actionId) {
       (alet ? alet.isim : "alet") + " gerekli</span>",
       "hata"
     );
-    return;
     sesHata();
+    return;
   }
 
   if (girdilerYeterliMi(action) === false) {
@@ -269,8 +278,8 @@ export function aksiyonBaslat(actionId) {
       "<span class='bildirim-icerik'>" + action.isim + "</span>",
       "hata"
     );
-    return;
     sesHata();
+    return;
   }
 
   if (ciktilarSigarMi(action) === false) {
@@ -279,8 +288,8 @@ export function aksiyonBaslat(actionId) {
       "<span class='bildirim-icerik'>Yer açman gerekiyor</span>",
       "hata"
     );
-    return;
     sesHata();
+    return;
   }
 
   if (state.aktifZamanlayici !== null) {
@@ -303,8 +312,8 @@ export function aksiyonBaslat(actionId) {
         "hata"
       );
       aksiyonDurdur();
-      return;
       sesHata();
+      return;
     }
 
     if (ciktilarSigarMi(action) === false) {
@@ -314,8 +323,8 @@ export function aksiyonBaslat(actionId) {
         "hata"
       );
       aksiyonDurdur();
-      return;
       sesHata();
+      return;
     }
 
     girdileriTuket(action, 1);
@@ -456,8 +465,8 @@ export function savasBaslat(monsterId) {
       "<span class='bildirim-icerik'>Yay ok olmadan çalışmaz</span>",
       "hata"
     );
-    return;
     sesHata();
+    return;
   }
 
   let simdi = Date.now();
@@ -634,8 +643,8 @@ export function satinAl(itemId) {
       "<span class='bildirim-icerik'>🪙 " + urun.fiyat + " gerekli</span>",
       "hata"
     );
-    return;
     sesHata();
+    return;
   }
 
   // Envanterde yer yoksa satın alma
@@ -645,8 +654,8 @@ export function satinAl(itemId) {
       "<span class='bildirim-icerik'>Önce yer aç</span>",
       "hata"
     );
-    return;
     sesHata();
+    return;
   }
 
   state.altin = state.altin - urun.fiyat;
@@ -725,8 +734,8 @@ export function envanterSekmesiEkle() {
       maxSekmeSayisi() + " sekme</span>",
       "hata"
     );
-    return;
     sesHata();
+    return;
   }
  
   oyunPrompt("Yeni Sekme", "Sekmenin adını yaz.", "", function (isim) {
@@ -864,13 +873,13 @@ export function oyunuSifirla() {
     "Sıfırla",
     function () {
       state.kayitKapali = true;
-      localStorage.removeItem("idle-realm-kayit");
+      localStorage.removeItem(kayitAnahtari());
       location.reload();
     });
 }
 
 export function kaydiDisaAktar() {
-  let kayit = localStorage.getItem("idle-realm-kayit");
+  let kayit = localStorage.getItem(kayitAnahtari());
 
   if (kayit === null) {
     bildirimGoster(
@@ -878,8 +887,8 @@ export function kaydiDisaAktar() {
       "<span class='bildirim-icerik'>Önce biraz oyna</span>",
       "hata"
     );
-    return;
     sesHata();
+    return;
   }
 
   let alan = document.getElementById("yedek-alani");
@@ -917,15 +926,15 @@ export function kaydiIceAktar() {
       "<span class='bildirim-icerik'>Metin bozuk görünüyor</span>",
       "hata"
     );
-    return;
     sesHata();
+    return;
   }
 
   oyunConfirm("Kayıt Değiştirilsin mi?",
     "Mevcut ilerlemenin üzerine yazılacak.",
     "Yükle",
     function () {
-      localStorage.setItem("idle-realm-kayit", alan.value);
+      localStorage.setItem(kayitAnahtari(), alan.value);
       state.kayitKapali = true;
       location.reload();
     });
@@ -944,11 +953,23 @@ export function bolgeSec(bolgeId) {
       bolge.gerekliSavasSeviyesi + " gerekli</span>",
       "hata"
     );
-    return;
     sesHata();
+    return;
   }
 
   state.acikBolgeId = bolgeId;
+
+  // Bu bölgeyi ilk kez açıyorsa anlatısını göster
+  let ilkKez = state.gorulenBolgeAnlatilari.indexOf(bolgeId) === -1;
+  let anlati = bolgeAnlatilari[bolgeId];
+
+  if (ilkKez && anlati !== undefined) {
+    state.gorulenBolgeAnlatilari.push(bolgeId);
+    tumEkraniCiz();
+    oyunAnlati(bolge.ikon + " " + anlati.baslik, anlati.satirlar);
+    return;
+  }
+
   tumEkraniCiz();
 }
 
@@ -965,8 +986,8 @@ export function oyuncuAdiDegistir() {
           "<span class='bildirim-icerik'>En az 2 karakter</span>",
           "hata"
         );
-        return;
         sesHata();
+        return;
       }
  
       if (yeni.length > 16) {
@@ -991,8 +1012,8 @@ export function clanKur() {
           "<span class='bildirim-icerik'>En az 2 karakter</span>",
           "hata"
         );
-        return;
         sesHata();
+        return;
       }
  
       if (isim.length > 20) {
@@ -1068,8 +1089,8 @@ export function nisanBagisla(adet) {
       "<span class='bildirim-icerik'>Aktivite yaparak kazanırsın</span>",
       "hata"
     );
-    return;
     sesHata();
+    return;
   }
 
   let puan = adet * nisanPuaniDegeri();
@@ -1137,8 +1158,8 @@ export function clanYukseltmeAl(dalId) {
       "<span class='bildirim-icerik'>" + maliyet + " puan gerekli</span>",
       "hata"
     );
-    return;
     sesHata();
+    return;
   }
 
   if (!state.clan.yukseltmeler) {
@@ -1197,8 +1218,8 @@ export function depoyaKoy(itemId, adet) {
       "<span class='bildirim-icerik'>Depo dalını yükseltebilirsin</span>",
       "hata"
     );
-    return;
     sesHata();
+    return;
   }
 
   itemCikar(itemId, adet);
@@ -1239,8 +1260,8 @@ export function depodanAl(itemId, adet) {
       "<span class='bildirim-icerik'>Önce yer aç</span>",
       "hata"
     );
-    return;
     sesHata();
+    return;
   }
 
   kayit.miktar = kayit.miktar - adet;
@@ -1318,8 +1339,8 @@ export function aletYukselt(aletId) {
       "<span class='bildirim-icerik'>Daha iyisi yok</span>",
       "hata"
     );
-    return;
     sesHata();
+    return;
   }
 
   if (skillSeviyesi(alet.skillId) < hedef.gerekliSeviye) {
@@ -1329,8 +1350,8 @@ export function aletYukselt(aletId) {
       hedef.gerekliSeviye + " gerekli</span>",
       "hata"
     );
-    return;
     sesHata();
+    return;
   }
 
   if (state.altin < hedef.fiyat) {
@@ -1340,8 +1361,8 @@ export function aletYukselt(aletId) {
       hedef.fiyat.toLocaleString() + " gerekli</span>",
       "hata"
     );
+    sesHata();
     return;
-    sesSatinAlma();
   }
 
   state.altin = state.altin - hedef.fiyat;
@@ -1401,7 +1422,7 @@ export function ziyafetYe(itemId) {
     "seviye"
   );
   sesYemek();
-  ucanSayi("+" + Math.round(yemek.iyilestirme * clanYemekCarpani()),
+  ucanSayi("+" + Math.round(item.iyilestirme * clanYemekCarpani()),
     "iyilesme", "#oyuncu-karti");
  
   tumEkraniCiz();
@@ -1423,8 +1444,8 @@ export function dukkanYukseltmeAl(dalId) {
       "<span class='bildirim-icerik'>" + dal.isim + " tamamlandı</span>",
       "hata"
     );
-    return;
     sesHata();
+    return;
   }
  
   let sonraki = dal.kademeler[kademe];
@@ -1436,8 +1457,8 @@ export function dukkanYukseltmeAl(dalId) {
       sonraki.fiyat.toLocaleString() + " gerekli</span>",
       "hata"
     );
+    sesHata();
     return;
-    sesSatinAlma();
   }
  
   state.altin = state.altin - sonraki.fiyat;
@@ -1510,4 +1531,58 @@ export function aksiyonSesiDegistir() {
 
 export function sesOrnekCal() {
   sesSeviyeAtladi();
+}
+
+// ---------- HİKAYE ----------
+
+// Yeni oyunda bir kez gösterilir
+export function acilisiGoster() {
+  if (state.acilisGosterildi) {
+    return;
+  }
+
+  state.acilisGosterildi = true;
+  oyunAnlati("🔥 Everforge", acilisMetni);
+}
+
+// Kronik kaydını tekrar okumak için
+export function kronikOku(kronikId) {
+  for (let i = 0; i < kronikKayitlari.length; i++) {
+    if (kronikKayitlari[i].id === kronikId) {
+      let k = kronikKayitlari[i];
+      oyunAnlati(k.ikon + " " + k.baslik, [k.metin]);
+      return;
+    }
+  }
+}
+
+// ---------- MÜZİK AYARLARI ----------
+//
+// Müzik tercihi karaktere değil cihaza ait (menüde de çalıyor),
+// bu yüzden state'te tutulmuyor — music.js kendi localStorage
+// anahtarında saklıyor.
+
+export function muzikAcKapatBtn() {
+  muzikAcKapat();
+  tumEkraniCiz();
+}
+
+export function muzikSeviyesiDegistir(deger) {
+  let sayi = parseInt(deger);
+
+  if (isNaN(sayi)) {
+    return;
+  }
+
+  muzikSeviyesiAyarla(sayi / 100);
+
+  // Kaydırırken tüm ekranı çizmiyoruz — sadece yazıyı güncelliyoruz
+  let etiket = document.getElementById("muzik-deger");
+  if (etiket !== null) {
+    etiket.textContent = "%" + sayi;
+  }
+}
+
+export function muzikDinle() {
+  muzikOrnekCal();
 }

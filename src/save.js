@@ -15,7 +15,66 @@ import { oyunAlert } from "./modal.js";
 // KAYIT / YÜKLEME / OFFLINE İLERLEME
 // ============================================================
 
-const KAYIT_ANAHTARI = "idle-realm-kayit";
+// ============================================================
+// KAYIT BÖLMELERİ
+//
+// Üç ayrı karakter tutulabiliyor. Her bölmenin kendi anahtarı
+// var: everforge-kayit-1, -2, -3
+//
+// Aktif bölme menüde seçiliyor ve o oturum boyunca sabit
+// kalıyor. Bu yüzden state'te değil, modül seviyesinde bir
+// değişkende duruyor — kaydın kendisine yazılmaması gerekiyor.
+// ============================================================
+
+export const MAX_SLOT = 3;
+
+const ANAHTAR_ONEK = "everforge-kayit";
+let aktifSlot = 1;
+
+export function kayitAnahtari(slot) {
+  return ANAHTAR_ONEK + "-" + (slot ? slot : aktifSlot);
+}
+
+export function aktifSlotAl() {
+  return aktifSlot;
+}
+
+export function aktifSlotAyarla(slot) {
+  if (slot < 1 || slot > MAX_SLOT) {
+    return;
+  }
+  aktifSlot = slot;
+}
+
+// ---------- ESKİ KAYITLARIN GÖÇÜ ----------
+//
+// İki aşamalı geçmiş var:
+//   idle-realm-kayit  (oyun adı değişmeden önce)
+//   everforge-kayit   (bölme sistemi gelmeden önce)
+// İkisi de 1. bölmeye taşınıyor.
+
+function kaydiGocEttir() {
+  let hedef = ANAHTAR_ONEK + "-1";
+
+  // 1. bölmede zaten kayıt varsa dokunma
+  if (localStorage.getItem(hedef) !== null) {
+    return;
+  }
+
+  let eskiAnahtarlar = ["everforge-kayit", "idle-realm-kayit"];
+
+  for (let i = 0; i < eskiAnahtarlar.length; i++) {
+    let eski = localStorage.getItem(eskiAnahtarlar[i]);
+    if (eski !== null) {
+      localStorage.setItem(hedef, eski);
+      localStorage.removeItem(eskiAnahtarlar[i]);
+      console.log("Kayıt 1. bölmeye taşındı (" + eskiAnahtarlar[i] + ")");
+      return;
+    }
+  }
+}
+
+kaydiGocEttir();
 const MAX_OFFLINE_MS = 12 * 60 * 60 * 1000;
 
 // Kayıt yapısı değiştiğinde bu sayıyı artır ve kayitGocu()
@@ -44,7 +103,7 @@ export function oyunuKaydet() {
   }
 
   try {
-    localStorage.setItem(KAYIT_ANAHTARI, JSON.stringify(kayit));
+    localStorage.setItem(kayitAnahtari(), JSON.stringify(kayit));
   } catch (hata) {
     console.error("Kayıt başarısız:", hata);
   }
@@ -107,7 +166,7 @@ function kayitGocu(kayit) {
 }
 
 export function oyunuYukle() {
-  let kayitMetni = localStorage.getItem(KAYIT_ANAHTARI);
+  let kayitMetni = localStorage.getItem(kayitAnahtari());
 
   if (kayitMetni === null) {
     return;
@@ -467,17 +526,17 @@ function ozetGoster(sure, icerik) {
 
 // ---------- MENÜ İÇİN ----------
 
-export function kayitVarMi() {
-  return localStorage.getItem(KAYIT_ANAHTARI) !== null;
+export function kayitVarMi(slot) {
+  return localStorage.getItem(kayitAnahtari(slot)) !== null;
 }
 
-export function kaydiSil() {
-  localStorage.removeItem(KAYIT_ANAHTARI);
+export function kaydiSil(slot) {
+  localStorage.removeItem(kayitAnahtari(slot));
 }
 
 // Kaydı UYGULAMADAN sadece özetini okur (menüde göstermek için)
-export function kayitOzeti() {
-  let metin = localStorage.getItem(KAYIT_ANAHTARI);
+export function kayitOzeti(slot) {
+  let metin = localStorage.getItem(kayitAnahtari(slot));
   if (metin === null) {
     return null;
   }
@@ -492,11 +551,18 @@ export function kayitOzeti() {
       }
     }
 
+    let ist = kayit.istatistik ? kayit.istatistik : {};
+
     return {
       oyuncuAdi: kayit.oyuncuAdi ? kayit.oyuncuAdi : "Maceracı",
       toplamSeviye: toplamSeviye,
       altin: kayit.altin ? kayit.altin : 0,
-      kayitZamani: kayit.kayitZamani ? kayit.kayitZamani : 0
+      kayitZamani: kayit.kayitZamani ? kayit.kayitZamani : 0,
+      oyunSuresiMs: ist.toplamOyunSuresiMs ? ist.toplamOyunSuresiMs : 0,
+      oldurulen: ist.oldurulenCanavar ? ist.oldurulenCanavar : 0,
+      clanAdi: kayit.clan ? kayit.clan.isim : null,
+      clanAmblem: kayit.clan ? kayit.clan.amblem : null,
+      bolge: kayit.acikBolgeId ? kayit.acikBolgeId : "village"
     };
   } catch (hata) {
     return null;

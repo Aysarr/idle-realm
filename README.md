@@ -1,4 +1,4 @@
-# Idle Realm
+# Everforge
 
 Melvor Idle / IdleRPG tarzı, tarayıcıda çalışan bir idle RPG.
 Saf HTML + CSS + JavaScript — derleme aracı, bağımlılık yok.
@@ -11,7 +11,7 @@ VS Code'da **Live Server** eklentisiyle `index.html`'i aç.
 ## Klasör Yapısı
 
 ```
-idle-realm/
+everforge/
   index.html          Sayfa iskeleti
   style.css           Tüm görsel tasarım
   manifest.json       PWA ayarları (telefona kurulabilmesi için)

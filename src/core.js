@@ -17,6 +17,7 @@ import { aletTurleri, aletKademeleri } from "./data/tools.js";
 import { ustalikTaslari, MAX_HIZ_INDIRIMI } from "./data/mastery.js";
 import { dukkanYukseltmeleri } from "./data/shopUpgrades.js";
 import { sesSeviyeAtladi, sesUstalikAtladi, sesBasarim } from "./sound.js";
+import { kronikKayitlari } from "./data/lore.js";
 
 // ============================================================
 // ÇEKİRDEK HESAPLAMALAR
@@ -392,6 +393,7 @@ export function istatistikArtir(alan, miktar) {
   }
   state.istatistik[alan] = state.istatistik[alan] + miktar;
     basarimlariKontrolEt();
+    kronikleriKontrolEt();
 }
 
 
@@ -1390,4 +1392,72 @@ export function canYenilenmeCarpani() {
     return 1;
   }
   return d;
+}
+
+function kronikKosuluSaglandiMi(kosul) {
+  if (kosul.tur === "savasSeviyesi") {
+    return savasSeviyesi() >= kosul.deger;
+  }
+ 
+  if (kosul.tur === "skillSeviyesi") {
+    return skillSeviyesi(kosul.skillId) >= kosul.deger;
+  }
+ 
+  if (kosul.tur === "istatistik") {
+    let deger = state.istatistik[kosul.alan];
+    if (deger === undefined) {
+      deger = 0;
+    }
+    return deger >= kosul.deger;
+  }
+ 
+  if (kosul.tur === "bolge") {
+    let bolge = bolgeBul(kosul.bolgeId);
+    if (bolge === null) {
+      return false;
+    }
+    return bolgeAcikMi(bolge);
+  }
+ 
+  if (kosul.tur === "clan") {
+    return clanSeviyesi() >= kosul.deger;
+  }
+ 
+  return false;
+}
+ 
+export function kronikAcikMi(kronikId) {
+  return state.acilanKronikler.indexOf(kronikId) !== -1;
+}
+ 
+// Yeni açılan kronik var mı diye bakar. Açtıysa true döner.
+export function kronikleriKontrolEt() {
+  let yeniAcildi = false;
+ 
+  for (let i = 0; i < kronikKayitlari.length; i++) {
+    let k = kronikKayitlari[i];
+ 
+    if (kronikAcikMi(k.id)) {
+      continue;
+    }
+ 
+    if (kronikKosuluSaglandiMi(k.kosul) === false) {
+      continue;
+    }
+ 
+    state.acilanKronikler.push(k.id);
+    yeniAcildi = true;
+ 
+    bildirimGoster(
+      "<span class='bildirim-baslik'>📖 Kronik</span>" +
+      "<span class='bildirim-icerik'>" + k.ikon + " " + k.baslik + "</span>",
+      "kronik"
+    );
+  }
+ 
+  return yeniAcildi;
+}
+ 
+export function acilanKronikSayisi() {
+  return state.acilanKronikler.length;
 }
