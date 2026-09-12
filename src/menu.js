@@ -1,19 +1,24 @@
 import { state, CAN_YENILENME_MS } from "./state.js";
 import { tumEkraniCiz, cubuklariGuncelle } from "./ui.js";
 import {
-  oyunuYukle, oyunuKaydet, kayitVarMi, kayitOzeti, kaydiSil
+  oyunuYukle, oyunuKaydet, kayitVarMi, kayitOzeti, kaydiSil, profilKur
 } from "./save.js";
 import { aksiyonBaslat, savasBaslat, canYenilenmeTuru } from "./gameplay.js";
-import { profilKur } from "./save.js";
 import { istatistikArtir } from "./core.js";
+import { oyunPrompt, oyunConfirm, oyunAlert } from "./modal.js";
+import {
+  sesSistemiKur, sesSeviyesiAyarla, sesDegistir, sesAcikMi
+} from "./sound.js";
 
 // ============================================================
 // AÇILIŞ MENÜSÜ
 //
-// Oyun artık açılır açılmaz başlamıyor. Önce bu menü çıkıyor,
+// Oyun açılır açılmaz başlamıyor. Önce bu menü çıkıyor,
 // oyuncu seçim yapınca oyunuBaslat() çalışıyor.
-// Bunun bir faydası da şu: offline ilerleme özeti, oyuncu
-// hazır olduğunda gösteriliyor.
+//
+// Bunun bir faydası da şu: tarayıcılar kullanıcı etkileşimi
+// olmadan ses çalmaya izin vermez. Menüdeki butona basılmış
+// olduğu için ses sistemini orada güvenle kurabiliyoruz.
 // ============================================================
 
 function sureMetni(ms) {
@@ -51,8 +56,9 @@ export function anaMenuGoster() {
   if (ozet !== null) {
     html = html +
       "<div class='menu-kayit-bilgi'>" +
-      "Toplam seviye <strong>" + ozet.toplamSeviye + "</strong> · " +
-      "🪙 <strong>" + ozet.altin + "</strong><br>" +
+      "<strong>" + ozet.oyuncuAdi + "</strong><br>" +
+      "Toplam Seviye " + ozet.toplamSeviye + " · 🪙 " +
+      ozet.altin.toLocaleString() + "<br>" +
       "<span class='menu-kucuk'>Son oynama: " +
       sureMetni(Date.now() - ozet.kayitZamani) + "</span>" +
       "</div>";
@@ -63,9 +69,7 @@ export function anaMenuGoster() {
       "<button class='menu-buton' onclick='menuYeniOyun()'>Yeni Oyun</button>";
   } else {
     html = html +
-      "<div class='menu-kayit-bilgi'>" +
-      "Kaydedilmiş oyun bulunamadı." +
-      "</div>";
+      "<div class='menu-kayit-bilgi'>Kaydedilmiş oyun bulunamadı.</div>";
     html = html +
       "<button class='menu-buton ana' onclick='menuYeniOyun()'>Yeni Oyun</button>";
   }
@@ -101,7 +105,19 @@ function oyunuBaslat(kayitYuklensinMi) {
       state.devamEdilecekAksiyonId = null;
     }
   }
+
   profilKur();
+
+  // --- SES SİSTEMİ ---
+  // Tarayıcı ses çalmaya ancak kullanıcı etkileşiminden sonra
+  // izin verir. Menüdeki butona basıldığı için burası güvenli.
+  sesSistemiKur();
+  sesSeviyesiAyarla(state.sesSeviyesi);
+
+  // Kayıttaki ses tercihini uygula
+  if (state.sesAcik === false && sesAcikMi() === true) {
+    sesDegistir();
+  }
 
   // Oynama süresini say
   setInterval(function () {
@@ -111,7 +127,7 @@ function oyunuBaslat(kayitYuklensinMi) {
   menuyuKapat();
   tumEkraniCiz();
 
-  // Zamanlayıcılar ancak oyun başlayınca kurulur -
+  // Zamanlayıcılar ancak oyun başlayınca kurulur —
   // menüdeyken otomatik kayıt çalışmasın istiyoruz
   window.addEventListener("beforeunload", oyunuKaydet);
   setInterval(oyunuKaydet, 5000);
@@ -125,37 +141,37 @@ export function menuDevamEt() {
 
 export function menuYeniOyun() {
   if (kayitVarMi()) {
-    let onay = confirm(
-      "Kayıtlı bir oyunun var.\n\n" +
-      "Yeni oyuna başlarsan o ilerleme silinecek.\n" +
-      "Devam edilsin mi?"
-    );
-    if (onay === false) {
-      return;
-    }
-    kaydiSil();
+    oyunConfirm("Yeni Oyun",
+      "Kayıtlı bir oyunun var. Yeni oyuna başlarsan o ilerleme silinecek.",
+      "Yeni Başla",
+      function () {
+        kaydiSil();
+        oyunuBaslat(false);
+      });
+    return;
   }
 
   oyunuBaslat(false);
 }
 
 export function menuYedektenYukle() {
-  let metin = prompt("Yedek metnini buraya yapıştır:");
+  oyunPrompt("Yedekten Yükle", "Yedek metnini buraya yapıştır.", "",
+    function (metin) {
+      if (metin.trim() === "") {
+        return;
+      }
 
-  if (metin === null || metin.trim() === "") {
-    return;
-  }
+      try {
+        let test = JSON.parse(metin);
+        if (!test.skills) {
+          throw new Error("skills yok");
+        }
+      } catch (hata) {
+        oyunAlert("Geçersiz Yedek", "Bu metin geçerli bir yedek değil.");
+        return;
+      }
 
-  try {
-    let test = JSON.parse(metin);
-    if (!test.skills) {
-      throw new Error("skills yok");
-    }
-  } catch (hata) {
-    alert("Bu metin geçerli bir yedek değil.");
-    return;
-  }
-
-  localStorage.setItem("idle-realm-kayit", metin);
-  location.reload();
+      localStorage.setItem("idle-realm-kayit", metin);
+      location.reload();
+    });
 }

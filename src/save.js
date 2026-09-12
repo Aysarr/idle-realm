@@ -9,6 +9,7 @@ import {
   aksiyonSuresi, ustalikXpVer, rastgeleMiktar, seviyeHesapla,
   nisanDenemesiToplu, ustalikXpCarpani
 } from "./core.js";
+import { oyunAlert } from "./modal.js";
 
 // ============================================================
 // KAYIT / YÜKLEME / OFFLINE İLERLEME
@@ -461,7 +462,7 @@ function sureMetni(ms) {
 }
 
 function ozetGoster(sure, icerik) {
-  alert("Hoş geldin! " + sure + " uzaktaydın.\n\n" + icerik);
+  oyunAlert("Hoş Geldin!", sure + " uzaktaydın.\n\n" + icerik);
 }
 
 // ---------- MENÜ İÇİN ----------

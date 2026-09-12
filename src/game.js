@@ -12,7 +12,8 @@ import {
   oyunuSifirla, kaydiDisaAktar, kaydiIceAktar,bolgeSec,
   oyuncuAdiDegistir,  clanKur, clanDagit, nisanBagisla, clanAmblemiDegistir,
   clanYukseltmeAl, depoyaKoy, depodanAl, depoyaKoySor, depodanAlSor,
-  aletYukselt, ziyafetYe, dukkanYukseltmeAl, satSor
+  aletYukselt, ziyafetYe, dukkanYukseltmeAl, satSor,
+  sesAcKapat, sesSeviyesiDegistir, sesOrnekCal, aksiyonSesiDegistir,
 } from "./gameplay.js";
 import { bonuslariTemizle } from "./core.js";
 
@@ -65,6 +66,10 @@ window.aletYukselt = aletYukselt;
 window.ziyafetYe = ziyafetYe;
 window.dukkanYukseltmeAl = dukkanYukseltmeAl;
 window.satSor = satSor;
+window.sesAcKapat = sesAcKapat;
+window.sesSeviyesiDegistir = sesSeviyesiDegistir;
+window.sesOrnekCal = sesOrnekCal;
+window.aksiyonSesiDegistir = aksiyonSesiDegistir;
 
 window.menuDevamEt = menuDevamEt;
 window.menuYeniOyun = menuYeniOyun;

@@ -3,6 +3,7 @@ import { items } from "./data/items.js";
 import { actions } from "./data/actions.js";
 import { monsters } from "./data/monsters.js";
 import { ekipmanSlotlari } from "./data/slots.js";
+import { parlat } from "./effects.js";
 import { state } from "./state.js";
 import { bildirimGoster } from "./notify.js";
 import { bolgeler } from "./data/regions.js";
@@ -15,6 +16,7 @@ import { basarimlar } from "./data/achievements.js";
 import { aletTurleri, aletKademeleri } from "./data/tools.js";
 import { ustalikTaslari, MAX_HIZ_INDIRIMI } from "./data/mastery.js";
 import { dukkanYukseltmeleri } from "./data/shopUpgrades.js";
+import { sesSeviyeAtladi, sesUstalikAtladi, sesBasarim } from "./sound.js";
 
 // ============================================================
 // ÇEKİRDEK HESAPLAMALAR
@@ -332,6 +334,7 @@ export function ustalikXpVer(action, kere) {
       "<span class='bildirim-icerik'>Ustalık " + yeniSeviye + "</span>",
       "ustalik"
     );
+    sesUstalikAtladi();
   }
 }
 
@@ -374,6 +377,8 @@ export function xpVer(skillId, miktar) {
       "<span class='bildirim-icerik'>Seviye " + yeniSeviye + "! 🎉</span>",
       "seviye"
     );
+    sesSeviyeAtladi();
+    parlat(".menu-oge.aktif", "#5fd67a");
   }
 }
 
@@ -480,6 +485,7 @@ export function basarimlariKontrolEt() {
       odulYazisi + "</span>",
       "basarim"
     );
+    sesBasarim();
   }
 }
 

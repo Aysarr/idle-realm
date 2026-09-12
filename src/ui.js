@@ -30,7 +30,7 @@ import {
   clanHizBonusu, basarimAcikMi, basarimIlerlemesi, gosterilecekBasarimlar,
   nisanPuaniDegeri,aletKademesi, aletKademeBilgisi,
   maxSekmeSayisi, skillAletTuru, aletYeterliMi, ciftUrunSansi,
-  sonrakiUstalikTasi, aktifBonusListesi, bonusAdi, bonusIkonu, bonusDegeri, bonuslariTemizle,
+  sonrakiUstalikTasi, aktifBonusListesi, bonusAdi, bonusIkonu,
   dukkanKademesi, satisCarpani,
 } from "./core.js";
 
@@ -642,7 +642,7 @@ function savasEkraniCiz() {
   }
 
   html = html +
-    "<div class='kart " + (savasVarMi ? "aktif-kart" : "") + "'>" +
+    "<div class='kart " + (savasVarMi ? "aktif-kart" : "") + "' id='oyuncu-karti'>" +
     "<span class='aksiyon-bilgi'><strong>🧙 Sen</strong>" +
     "<span class='alt-bilgi'>" +
     "🎯 " + isabetPuani() + " isabet · " +
@@ -732,7 +732,8 @@ function savasEkraniCiz() {
     }
 
     html = html +
-      "<div class='kart " + (buCanavarAktif ? "aktif-kart" : "") + "'>" +
+     "<div class='kart " + (buCanavarAktif ? "aktif-kart" : "") + "' " +
+      "id='canavar-" + monster.id + "'>" +
       "<span class='aksiyon-bilgi'>" +
       "<strong>" + monster.ikon + " " + monster.isim + " " + tipRozeti + "</strong>" +
       "<span class='alt-bilgi'>" +
@@ -1673,8 +1674,43 @@ function basarimEkraniCiz() {
 
 function ayarlarEkraniCiz() {
   let html = sayfaBasligi("settings", "⚙️ Ayarlar");
+  
+  html = html + "<div class='baslik'>🔊 Ses</div>";
 
-  html = html + "<div class='baslik'>Kayıt</div>";
+  html = html +
+    "<div class='kart'>" +
+    "<span class='aksiyon-bilgi'><strong>Ses Efektleri</strong>" +
+    "<span class='alt-bilgi'>Vuruş, seviye atlama, loot ve alışveriş " +
+    "sesleri</span></span>" +
+    "<button onclick='sesAcKapat()'>" +
+    (state.sesAcik ? "AÇIK" : "KAPALI") +
+    "</button></div>";
+
+  if (state.sesAcik) {
+    html = html +
+      "<div class='kart'>" +
+      "<span class='aksiyon-bilgi'><strong>Aksiyon Sesi</strong>" +
+      "<span class='alt-bilgi'>Her toplama/üretim tamamlandığında kısa bir ton. " +
+      "Uzun seanslarda rahatsız edici olabilir.</span></span>" +
+      "<button onclick='aksiyonSesiDegistir()'>" +
+      (state.aksiyonSesi ? "AÇIK" : "KAPALI") +
+      "</button></div>";
+
+    html = html +
+      "<div class='kart'>" +
+      "<span class='aksiyon-bilgi'><strong>Ses Seviyesi</strong>" +
+      "<span class='alt-bilgi'>Örnek dinlemek için butona bas</span></span>" +
+      "<button onclick='sesOrnekCal()'>Dinle</button>" +
+      "<div class='esik-satiri'>" +
+      "<input type='range' min='0' max='100' step='5' value='" +
+      Math.round(state.sesSeviyesi * 100) + "' " +
+      "oninput='sesSeviyesiDegistir(this.value)'>" +
+      "<span class='esik-deger' id='ses-deger'>%" +
+      Math.round(state.sesSeviyesi * 100) + "</span>" +
+      "</div></div>";
+  }
+
+html = html + "<div class='baslik'>Kayıt</div>";
 
   html = html +
     "<div class='kart'><span class='aksiyon-bilgi'>" +

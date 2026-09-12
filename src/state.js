@@ -108,7 +108,12 @@ export let state = {
 
   // Kayıttan yüklenen, devam ettirilmesi gereken aksiyon
   devamEdilecekAksiyonId: null,
-  devamEdilecekSavasId: null
+  devamEdilecekSavasId: null,
+
+  // Ses ayarları
+  sesAcik: true,
+  aksiyonSesi: false,
+  sesSeviyesi: 0.3
 };
 
 // Savaşta iki saldırı arası süre
@@ -174,6 +179,9 @@ export const KAYDEDILECEK_ALANLAR = [
   "savasStili",
   "gorulenYardimlar",
   "aktifBonuslar",
+  "sesAcik",
+  "aksiyonSesi",
+  "sesSeviyesi",
 
   // Devam eden aktivite
   "acikBolgeId",

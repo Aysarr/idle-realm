@@ -123,6 +123,14 @@ export let yardimlar = {
           "O metni bir yere kaydedip başka cihazda İçe Aktar ile geri yükleyebilirsin.",
           "İçe aktarma mevcut ilerlemenin üzerine yazar."
         ]
+      },
+      {
+        baslik: "Ses",
+        satirlar: [
+          "Sesler dosyadan değil, koddan üretilir — indirme yükü yoktur.",
+          "Aksiyon tamamlama, vuruş, ıskalama, seviye atlama ve alışveriş anlarında çalar.",
+          "Ses seviyesini buradan ayarlayabilir, tamamen kapatabilirsin."
+        ]
       }
     ],
     ipuclari: [
