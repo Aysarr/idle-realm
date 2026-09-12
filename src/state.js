@@ -52,6 +52,7 @@ export let state = {
   acilisGosterildi: false,
   gorulenBolgeAnlatilari: [],
   acilanKronikler: [],
+  duyurulanBolgeler: [],
 
     // Açılan başarımların id listesi
   acilanBasarimlar: [],
@@ -69,6 +70,9 @@ export let state = {
   acikEnvanterSekmesi: "genel",
     // Sekme ikonu için seçilen/sürüklenen eşya
   tasinanItemId: null,
+
+  // Envanterde detay paneli açık olan eşya (geçici arayüz durumu)
+  secilenEnvanterItemId: null,
   altin: 0,
 
   // Oyuncu
@@ -157,6 +161,7 @@ export const KAYDEDILECEK_ALANLAR = [
   "acilisGosterildi",
   "gorulenBolgeAnlatilari",
   "acilanKronikler",
+  "duyurulanBolgeler",
 
   // İlerleme
   "istatistik",

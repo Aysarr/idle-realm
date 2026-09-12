@@ -12,12 +12,12 @@ import {
   sekmeTikla, ikonIcinSec, ikonSurukleBasla,
   ikonSurukleUzerinde, ikonBirak, ikonSurukleBitti,
   oyunuSifirla, kaydiDisaAktar, kaydiIceAktar,bolgeSec,
-  oyuncuAdiDegistir,  clanKur, clanDagit, nisanBagisla, clanAmblemiDegistir,
+   clanKur, clanDagit, nisanBagisla, clanAmblemiDegistir,
   clanYukseltmeAl, depoyaKoy, depodanAl, depoyaKoySor, depodanAlSor,
   aletYukselt, ziyafetYe, dukkanYukseltmeAl, satSor,
   sesAcKapat, sesSeviyesiDegistir, sesOrnekCal, aksiyonSesiDegistir,
   muzikAcKapatBtn, muzikSeviyesiDegistir, muzikDinle,
-  kronikOku,
+  kronikOku, envanterEsyaSec, envanterSecimiKapat,
 } from "./gameplay.js";
 import { bonuslariTemizle } from "./core.js";
 
@@ -56,7 +56,6 @@ window.oyunuSifirla = oyunuSifirla;
 window.kaydiDisaAktar = kaydiDisaAktar;
 window.kaydiIceAktar = kaydiIceAktar;
 window.bolgeSec = bolgeSec;
-window.oyuncuAdiDegistir = oyuncuAdiDegistir;
 window.clanKur = clanKur;
 window.clanDagit = clanDagit;
 window.nisanBagisla = nisanBagisla;
@@ -78,6 +77,8 @@ window.muzikAcKapatBtn = muzikAcKapatBtn;
 window.muzikSeviyesiDegistir = muzikSeviyesiDegistir;
 window.muzikDinle = muzikDinle;
 window.kronikOku = kronikOku;
+window.envanterEsyaSec = envanterEsyaSec;
+window.envanterSecimiKapat = envanterSecimiKapat;
 
 window.menuDevamEt = menuDevamEt;
 window.menuYeniOyun = menuYeniOyun;

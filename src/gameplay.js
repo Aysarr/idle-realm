@@ -19,7 +19,7 @@ import {
   dukkanDaliBul, dukkanKademesi, satisCarpani, okKorumaSansi, canYenilenmeCarpani,
 } from "./core.js";
 import { kayitAnahtari } from "./save.js";
-import { bildirimGoster } from "./notify.js";
+import { bildirimGoster, bildirimBuyuk } from "./notify.js";
 import { tumEkraniCiz, esikYazisiGuncelle } from "./ui.js";
 import { NISAN_NADIR_BONUS } from "./data/clan.js";
 import {
@@ -361,8 +361,12 @@ export function aksiyonDurdur() {
 
 // ---------- SAVAŞ ----------
 
-function savasKaydiEkle(mesaj) {
-  state.savasKayitlari.unshift(mesaj);
+// tur: "vurus" | "iska" | "gelen" | "olum" | "oyuncu-olum"
+// Kayıt satırları renklendirilsin diye tür bilgisi tutuyoruz.
+// Eski kayıtlarda tür yok — arayüz o durumda nötr renk kullanıyor.
+function savasKaydiEkle(mesaj, tur) {
+  state.savasKayitlari.unshift({ metin: mesaj, tur: tur ? tur : "" });
+
   if (state.savasKayitlari.length > 8) {
     state.savasKayitlari.pop();
   }
@@ -423,7 +427,8 @@ function lootDus(monster) {
     mesajParcalari.push("🎖️ Clan Nişanı");
   }
 
-  savasKaydiEkle("💀 " + monster.isim + " öldü → " + mesajParcalari.join(", "));
+  savasKaydiEkle("💀 " + monster.isim + " öldü → " +
+    mesajParcalari.join(", "), "olum");
 
   bildirimGoster(
     "<span class='bildirim-baslik'>" + monster.ikon + " " + monster.isim + " öldü</span>" +
@@ -514,7 +519,7 @@ function oyuncuVurusu(monster) {
   }
 
   if (Math.random() > oyuncuIsabetSansi(monster)) {
-    savasKaydiEkle("😐 Iskaladın");
+    savasKaydiEkle("😐 Iskaladın", "iska");
     sesIskalama();
     ucanSayi("Iska", "iskala", "#canavar-" + monster.id);
     return false;
@@ -532,7 +537,8 @@ function oyuncuVurusu(monster) {
     etki = " (zayıf)";
   }
 
-  savasKaydiEkle("⚔️ " + monster.isim + "'a " + hasar + " hasar" + etki);
+  savasKaydiEkle("⚔️ " + monster.isim + "'a " + hasar + " hasar" + etki,
+    "vurus");
 
   if (state.aktifSavasMonsterHp <= 0) {
     sesCanavarOldu();
@@ -549,7 +555,7 @@ function oyuncuVurusu(monster) {
 // Canavarın tek vuruşu. Oyuncu öldüyse true döner.
 function canavarVurusu(monster) {
   if (Math.random() > canavarIsabetSansi(monster)) {
-    savasKaydiEkle("🛡️ " + monster.isim + " ıskaladı");
+    savasKaydiEkle("🛡️ " + monster.isim + " ıskaladı", "iska");
     sesIskalama();
     ucanSayi("Iska", "iskala", "#oyuncu-karti");
     return false;
@@ -557,7 +563,8 @@ function canavarVurusu(monster) {
 
   let hasar = gelenHasar(monster.saldiri);
   state.oyuncuHp = state.oyuncuHp - hasar;
-  savasKaydiEkle("💥 " + monster.isim + " sana " + hasar + " hasar verdi");
+  savasKaydiEkle("💥 " + monster.isim + " sana " + hasar +
+    " hasar verdi", "gelen");
   sesHasarAldin();
   ucanSayi("-" + hasar, "hasar", "#oyuncu-karti");
 
@@ -973,31 +980,6 @@ export function bolgeSec(bolgeId) {
   tumEkraniCiz();
 }
 
-// ---------- PROFİL ----------
-
-export function oyuncuAdiDegistir() {
-  oyunPrompt("Karakter Adı", "Diğer oyunculara bu isimle görüneceksin.",
-    state.oyuncuAdi, function (yeni) {
-      yeni = yeni.trim();
- 
-      if (yeni.length < 2) {
-        bildirimGoster(
-          "<span class='bildirim-baslik'>Çok kısa</span>" +
-          "<span class='bildirim-icerik'>En az 2 karakter</span>",
-          "hata"
-        );
-        sesHata();
-        return;
-      }
- 
-      if (yeni.length > 16) {
-        yeni = yeni.substring(0, 16);
-      }
- 
-      state.oyuncuAdi = yeni;
-      tumEkraniCiz();
-    });
-}
 
 // ---------- CLAN ----------
 
@@ -1110,6 +1092,9 @@ export function nisanBagisla(adet) {
 
   if (yeniSeviye > eskiSeviye) {
     clanGunlugeEkle("⭐ Clan Seviye " + yeniSeviye + " oldu");
+    bildirimBuyuk(state.clan.amblem, state.clan.isim,
+      "Clan Seviye " + yeniSeviye + " · +" +
+      (yeniSeviye - eskiSeviye) + " yükseltme puanı", "clan");
     bildirimGoster(
       "<span class='bildirim-baslik'>🛡️ " + state.clan.isim + "</span>" +
       "<span class='bildirim-icerik'>Clan Seviye " + yeniSeviye +
@@ -1585,4 +1570,30 @@ export function muzikSeviyesiDegistir(deger) {
 
 export function muzikDinle() {
   muzikOrnekCal();
+}
+
+// ---------- ENVANTER SEÇİMİ ----------
+//
+// Bir eşyaya tıklayınca detay paneli açılıyor. Aynı eşyaya
+// tekrar tıklamak paneli kapatıyor.
+
+export function envanterEsyaSec(itemId) {
+  // İkon seçme modundaysak eşyaya tıklamak ikon seçer, detay açmaz
+  if (state.tasinanItemId !== null) {
+    ikonIcinSec(itemId);
+    return;
+  }
+
+  if (state.secilenEnvanterItemId === itemId) {
+    state.secilenEnvanterItemId = null;
+  } else {
+    state.secilenEnvanterItemId = itemId;
+  }
+
+  tumEkraniCiz();
+}
+
+export function envanterSecimiKapat() {
+  state.secilenEnvanterItemId = null;
+  tumEkraniCiz();
 }

@@ -92,7 +92,7 @@ function slotHtml(slot) {
 
   html = html +
     "<div class='slot-govde'>" +
-    "<div class='slot-avatar'>🧙</div>" +
+    "<div class='slot-avatar'>" + slot + "</div>" +
     "<div class='slot-kimlik'>" +
     "<div class='slot-ad'>" + ozet.oyuncuAdi + "</div>" +
     "<div class='slot-alt'>" +
@@ -259,14 +259,39 @@ export function menuYeniOyun(slot) {
       "Yeni Başla",
       function () {
         kaydiSil(slot);
-        oyunuBaslat(false);
-        acilisiGoster();
+        isimSorVeBaslat();
       });
     return;
   }
 
-  oyunuBaslat(false);
-  acilisiGoster();
+  isimSorVeBaslat();
+}
+
+// Karakter adı oyunun BAŞINDA bir kez seçiliyor ve sonra
+// değişmiyor. Sebebi: online aşamada bu isim diğer oyunculara
+// görünecek; sürekli değişen bir isim clan geçmişini ve
+// katkı kayıtlarını anlamsız kılar.
+function isimSorVeBaslat() {
+  oyunPrompt("Karakterinin Adı",
+    "Bu isim sonradan değiştirilemez. Çevrimiçi özelliklerde " +
+    "diğer oyunculara böyle görüneceksin.",
+    "",
+    function (isim) {
+      isim = isim.trim();
+
+      if (isim.length < 2) {
+        oyunAlert("Çok Kısa", "En az 2 karakter olmalı.");
+        return;
+      }
+
+      if (isim.length > 16) {
+        isim = isim.substring(0, 16);
+      }
+
+      state.oyuncuAdi = isim;
+      oyunuBaslat(false);
+      acilisiGoster();
+    });
 }
 
 export function menuSlotSil(slot) {

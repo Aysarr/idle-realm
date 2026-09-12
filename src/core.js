@@ -5,7 +5,7 @@ import { monsters } from "./data/monsters.js";
 import { ekipmanSlotlari } from "./data/slots.js";
 import { parlat } from "./effects.js";
 import { state } from "./state.js";
-import { bildirimGoster } from "./notify.js";
+import { bildirimGoster, bildirimBuyuk } from "./notify.js";
 import { bolgeler } from "./data/regions.js";
 import { canavarTipleri } from "./data/combatTypes.js";
 import {
@@ -380,6 +380,14 @@ export function xpVer(skillId, miktar) {
     );
     sesSeviyeAtladi();
     parlat(".menu-oge.aktif", "#5fd67a");
+
+    // Her seviyede ekran ortasına bir şey çıkarsa erken oyunda
+    // rahatsız edici olur — sadece 10'un katları ve 99 için.
+    if (yeniSeviye % 10 === 0 || yeniSeviye === 99) {
+      bildirimBuyuk(skill.ikon, skill.isim + " " + yeniSeviye,
+        yeniSeviye === 99 ? "Maksimum seviye!" : "Seviye atladın",
+        "seviye");
+    }
   }
 }
 
@@ -393,6 +401,7 @@ export function istatistikArtir(alan, miktar) {
   }
   state.istatistik[alan] = state.istatistik[alan] + miktar;
     basarimlariKontrolEt();
+  bolgeleriKontrolEt();
     kronikleriKontrolEt();
 }
 
@@ -488,6 +497,7 @@ export function basarimlariKontrolEt() {
       "basarim"
     );
     sesBasarim();
+    bildirimBuyuk("🏆", b.isim, b.aciklama, "basarim");
   }
 }
 
@@ -1460,4 +1470,105 @@ export function kronikleriKontrolEt() {
  
 export function acilanKronikSayisi() {
   return state.acilanKronikler.length;
+}
+
+// ============================================================
+// EŞYA KADEMESİ VE RENGİ
+//
+// Ekipmanın hangi metal/malzeme kademesinden olduğunu id'sinden
+// anlıyoruz (bronze_sword, steel_helmet gibi). Bu, slot
+// çerçevelerini kademe rengiyle boyamak için kullanılıyor —
+// oyuncu ekipmanının seviyesini bir bakışta görüyor.
+//
+// Yeni bir kademe eklerken buraya bir satır yaz.
+// ============================================================
+
+const KADEME_RENKLERI = [
+  { onek: "bronze_",  isim: "Bronz",     renk: "#a0724a" },
+  { onek: "iron_",    isim: "Demir",     renk: "#8a8a92" },
+  { onek: "steel_",   isim: "Çelik",     renk: "#b0b8c4" },
+  { onek: "mithril_", isim: "Mithril",   renk: "#5a8ad4" },
+  { onek: "adamant_", isim: "Adamantit", renk: "#4aa86a" },
+  { onek: "obsidian_",isim: "Obsidyen",  renk: "#7a6a95" },
+  { onek: "dragon_",  isim: "Ejderha",   renk: "#d4553a" },
+  { onek: "shadow_",  isim: "Gölge",     renk: "#9a6ad4" }
+];
+
+// Ağaç kademesindeki yaylar için ayrı liste (metal değil)
+const YAY_RENKLERI = [
+  { onek: "short_bow",  renk: "#8a7a4a" },
+  { onek: "oak_bow",    renk: "#9a8a52" },
+  { onek: "willow_bow", renk: "#6a9a5a" },
+  { onek: "maple_bow",  renk: "#c4823a" },
+  { onek: "yew_bow",    renk: "#4a8a6a" },
+  { onek: "cedar_bow",  renk: "#8a5a3a" },
+  { onek: "magic_bow",  renk: "#7a6ad4" },
+  { onek: "shadow_bow", renk: "#9a6ad4" }
+];
+
+export function itemKademesi(item) {
+  if (item === null || !item.id) {
+    return null;
+  }
+
+  for (let i = 0; i < KADEME_RENKLERI.length; i++) {
+    if (item.id.indexOf(KADEME_RENKLERI[i].onek) === 0) {
+      return KADEME_RENKLERI[i];
+    }
+  }
+
+  return null;
+}
+
+export function itemRengi(item) {
+  if (item === null) {
+    return null;
+  }
+
+  let kademe = itemKademesi(item);
+  if (kademe !== null) {
+    return kademe.renk;
+  }
+
+  for (let i = 0; i < YAY_RENKLERI.length; i++) {
+    if (item.id === YAY_RENKLERI[i].onek) {
+      return YAY_RENKLERI[i].renk;
+    }
+  }
+
+  // Kademesiz ama seviye şartı olan eşyalar (nadir loot) altın
+  if (item.gereksinimler && item.gereksinimler.length > 0) {
+    return "#c9a227";
+  }
+
+  return null;
+}
+
+// ---------- YENİ BÖLGE DUYURUSU ----------
+//
+// Bir bölge savaş seviyesi yükseldiği için açıldığında oyuncuya
+// haber vermek gerekiyor — yoksa açıldığını fark etmiyor.
+// Her bölge bir kez duyuruluyor.
+
+export function bolgeleriKontrolEt() {
+  for (let i = 0; i < bolgeler.length; i++) {
+    let bolge = bolgeler[i];
+
+    if (state.duyurulanBolgeler.indexOf(bolge.id) !== -1) {
+      continue;
+    }
+
+    if (bolgeAcikMi(bolge) === false) {
+      continue;
+    }
+
+    state.duyurulanBolgeler.push(bolge.id);
+
+    // Başlangıç bölgesi için duyuru yapma — oyuncu zaten orada
+    if (bolge.gerekliSavasSeviyesi <= 1) {
+      continue;
+    }
+
+    bildirimBuyuk(bolge.ikon, bolge.isim, "Yeni bölge açıldı", "bolge");
+  }
 }

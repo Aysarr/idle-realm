@@ -678,7 +678,6 @@ export let items = [
     isabetBonusu: 8,
     hizMs: 3200,
     okGerektirir: true,
-    gereksinimler: [{ skillId: "ranged", seviye: 5 }],
     satisFiyati: 80
   },
   {

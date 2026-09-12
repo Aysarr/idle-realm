@@ -19,6 +19,7 @@
 export let bolgeler = [
   {
     id: "village",
+    renk: "#4a7a4a",
     isim: "Köy Çevresi",
     ikon: "🏘️",
     aciklama: "Tarlalar ve çitler. Zararsız görünen ama sinsi yaratıklar.",
@@ -26,6 +27,7 @@ export let bolgeler = [
   },
   {
     id: "forest",
+    renk: "#2f5d3a",
     isim: "Karanlık Orman",
     ikon: "🌲",
     aciklama: "Ağaçların arasında gözler var. Daha güçlü, daha ödüllü.",
@@ -33,6 +35,7 @@ export let bolgeler = [
   },
   {
     id: "mine",
+    renk: "#6a5a48",
     isim: "Terk Edilmiş Maden",
     ikon: "🕳️",
     aciklama: "Yıllar önce boşaltılmış galeriler. Karanlıkta bir şeyler kazıyor.",
@@ -40,6 +43,7 @@ export let bolgeler = [
   },
   {
     id: "temple",
+    renk: "#8a7a4a",
     isim: "Kayıp Tapınak",
     ikon: "🏛️",
     aciklama: "Ormanın derinliğinde, adı unutulmuş bir tanrıya adanmış taş salonlar.",
@@ -47,6 +51,7 @@ export let bolgeler = [
   },
   {
     id: "volcano",
+    renk: "#a8442a",
     isim: "Yanardağ Mağarası",
     ikon: "🌋",
     aciklama: "Duvarlar sıcak, hava kükürt kokuyor. Burada yaşayan şeyler ateşten korkmuyor.",
@@ -54,6 +59,7 @@ export let bolgeler = [
   },
   {
     id: "shadowrealm",
+    renk: "#4a3a6a",
     isim: "Gölge Diyarı",
     ikon: "🌑",
     aciklama: "Işığın ulaşmadığı bir yer. Buraya gelenlerin çoğu dönmedi.",

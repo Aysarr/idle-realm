@@ -201,12 +201,12 @@ export let yardimlar = {
         satirlar: [
           "Buradaki sayaçlar oyun boyunca birikir ve hiç sıfırlanmaz.",
           "İleride başarımlar ve clan katkısı bu sayaçların üstüne kurulacak.",
-          "Karakter adını buradan değiştirebilirsin."
+          "Karakter adı oyunun başında seçilir ve sonra değişmez."
         ]
       }
     ],
     ipuclari: [
-      "Adın ileride online özelliklerde diğer oyunculara görünecek."
+      "Adın çevrimiçi özelliklerde diğer oyunculara görünecek — bu yüzden sabit."
     ]
   },
 
